@@ -1,9 +1,10 @@
 "use client";
 
 import { useTelegram } from "@/lib/use-telegram";
+import { CandidateForm } from "@/components/candidate-form";
 
 export default function Home() {
-  const { ready, isTelegram, user, platform, colorScheme } = useTelegram();
+  const { ready, isTelegram, user, initData } = useTelegram();
 
   if (!ready) {
     return (
@@ -13,51 +14,51 @@ export default function Home() {
     );
   }
 
-  return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
-      <div className="w-full max-w-sm rounded-3xl border border-black/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-zinc-900">
-        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          Mini App is running
-        </span>
+  if (!isTelegram || !user) {
+    return (
+      <main className="flex flex-1 items-center justify-center p-6">
+        <div className="w-full max-w-sm rounded-3xl border border-black/10 bg-white p-6 text-center dark:border-white/10 dark:bg-zinc-900">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Open inside Telegram
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            Open the bot and tap the menu button to continue.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
-        {isTelegram && user ? (
-          <>
-            <h1 className="mt-5 text-3xl font-semibold tracking-tight">
-              Hello, {user.first_name} 👋
-            </h1>
-            <dl className="mt-6 divide-y divide-black/5 text-sm dark:divide-white/10">
-              <Row label="Telegram ID" value={String(user.id)} />
-              <Row
-                label="Username"
-                value={user.username ? `@${user.username}` : "none"}
-              />
-              <Row label="Language" value={user.language_code ?? "unknown"} />
-              <Row label="Platform" value={platform ?? "unknown"} />
-              <Row label="Theme" value={colorScheme ?? "unknown"} />
-            </dl>
-          </>
+  const defaultName = [user.first_name, user.last_name]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <main className="mx-auto w-full max-w-md flex-1 p-5 pb-10">
+      <header className="mb-6 flex items-center gap-3">
+        {user.photo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.photo_url}
+            alt=""
+            className="h-12 w-12 rounded-full object-cover"
+          />
         ) : (
-          <>
-            <h1 className="mt-5 text-2xl font-semibold tracking-tight">
-              Open inside Telegram
-            </h1>
-            <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-              The page works, but there's no Telegram data. Open the bot and tap
-              the menu button.
-            </p>
-          </>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-lg font-semibold text-white">
+            {user.first_name.charAt(0)}
+          </div>
         )}
-      </div>
-    </main>
-  );
-}
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">
+            Hi, {user.first_name} 👋
+          </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Fill in your profile and get matched with vacancies.
+          </p>
+        </div>
+      </header>
 
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between py-3">
-      <dt className="text-zinc-500 dark:text-zinc-400">{label}</dt>
-      <dd className="font-medium">{value}</dd>
-    </div>
+      <CandidateForm initData={initData} defaultName={defaultName} />
+    </main>
   );
 }
