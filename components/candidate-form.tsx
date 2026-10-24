@@ -8,6 +8,7 @@ import { candidateInputSchema, type CandidateRow } from "@/lib/candidate-schema"
 type Props = {
   initData: string;
   defaultName: string;
+  onSaved?: () => void;
 };
 
 type FormState = {
@@ -24,7 +25,7 @@ type Status = "loading" | "idle" | "saving" | "saved" | "error";
 const inputClass =
   "w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-base outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-white/10 dark:bg-zinc-800";
 
-export function CandidateForm({ initData, defaultName }: Props) {
+export function CandidateForm({ initData, defaultName, onSaved }: Props) {
   const [form, setForm] = useState<FormState>({
     full_name: defaultName,
     phone: "+998",
@@ -114,6 +115,7 @@ export function CandidateForm({ initData, defaultName }: Props) {
       setIsExisting(true);
       setStatus("saved");
       setMessage("Saved! HR will review your profile.");
+      onSaved?.();
     } catch (err) {
       setStatus("error");
       setMessage(err instanceof Error ? err.message : "Something went wrong");
