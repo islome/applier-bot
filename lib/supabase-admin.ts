@@ -6,7 +6,7 @@ export function getSupabaseAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    throw new Error("Supabase URL or service role key is not set in environment variables");
   }
 
   return createClient(url, key, {
