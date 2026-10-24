@@ -6,21 +6,10 @@ export type VerifiedInitData = {
   authDate: number;
 };
 
-/**
- * Verifies Telegram Mini App initData on the server.
- * Algorithm (official): https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
- *
- * 1. Remove `hash`, sort the remaining key=value pairs alphabetically, join with "\n"
- * 2. secret = HMAC_SHA256(key = "WebAppData", data = botToken)
- * 3. expected = HMAC_SHA256(key = secret, data = dataCheckString)
- * 4. compare with `hash` (constant time) and reject stale auth_date
- *
- * Returns null if anything is wrong. Never throws on bad input.
- */
 export function verifyInitData(
   initData: string,
   botToken: string,
-  maxAgeSeconds = 60 * 60 * 24, // 24h
+  maxAgeSeconds = 60 * 60 * 24,
 ): VerifiedInitData | null {
   if (!initData || !botToken) return null;
 
@@ -37,12 +26,7 @@ export function verifyInitData(
   const secret = createHmac("sha256", "WebAppData").update(botToken).digest();
   const expected = createHmac("sha256", secret).update(dataCheckString).digest();
 
-  let received: Buffer;
-  try {
-    received = Buffer.from(hash, "hex");
-  } catch {
-    return null;
-  }
+  const received = Buffer.from(hash, "hex");
   if (received.length !== expected.length) return null;
   if (!timingSafeEqual(received, expected)) return null;
 
