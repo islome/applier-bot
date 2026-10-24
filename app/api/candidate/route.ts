@@ -53,7 +53,16 @@ export async function POST(req: Request) {
 
   const { user } = auth;
 
-  const { data, error } = await getSupabaseAdmin()
+  let db;
+    try {
+  db = getSupabaseAdmin();
+} catch (e) {
+  const msg = e instanceof Error ? e.message : "config error";
+  console.error("supabase client failed:", msg);
+  return NextResponse.json({ error: msg }, { status: 500 });
+}
+
+  const { data, error } = await db
     .from("candidates")
     .upsert(
       {
@@ -69,9 +78,12 @@ export async function POST(req: Request) {
     .single();
 
   if (error) {
-    console.error("candidate POST failed:", error.message);
-    return NextResponse.json({ error: "Database error" }, { status: 500 });
-  }
+  console.error("candidate POST failed:", error.message, error.code);
+  return NextResponse.json(
+    { error: `DB: ${error.message} (${error.code ?? "no code"})` },
+    { status: 500 },
+  );
+}
 
   return NextResponse.json({ candidate: data });
 }
