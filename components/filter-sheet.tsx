@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { IconCheck } from "@/components/icons";
 import { haptic } from "@/lib/haptics";
 import { useTelegramBackButton } from "@/lib/use-telegram-back-button";
+import { useLanguage } from "@/components/language-provider";
 
 export type FilterOption = { value: string | null; label: string; count: number };
 
@@ -25,6 +26,7 @@ export function FilterSheet({
   onSelect: (value: string | null) => void;
   onClose: () => void;
 }) {
+  const { t } = useLanguage();
   useTelegramBackButton(onClose);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function FilterSheet({
     <div className="fixed inset-0 z-50">
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t("common.close")}
         onClick={onClose}
         className="fade-in absolute inset-0 bg-black/35"
       />

@@ -8,9 +8,11 @@ import { ErrorState } from "@/components/empty-state";
 import type { CandidateRow } from "@/lib/candidate-schema";
 import { formatPhone, experienceLabel } from "@/lib/profile-format";
 import type { TelegramUser } from "@/types/telegram";
+import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 
 export function ProfileScreen({ user, initData }: { user: TelegramUser; initData: string }) {
   const router = useRouter();
+  const { language, t, majorLabel } = useLanguage();
   const [candidate, setCandidate] = useState<CandidateRow | null>(null);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
@@ -31,7 +33,8 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
         else setCandidate(body.candidate);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load profile");
+        console.error("profile load failed:", e);
+        if (!cancelled) setError("load-error");
       });
 
     return () => {
@@ -48,16 +51,16 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
   const resumeExt = candidate?.resume_path?.split(".").pop()?.toUpperCase();
   const resumeLabel = candidate?.resume_path
     ? resumeExt && resumeExt.length <= 5
-      ? `${resumeExt} uploaded`
-      : "Uploaded"
-    : "Not uploaded";
+      ? `${resumeExt} ${t("profile.uploaded")}`
+      : t("profile.uploaded")
+    : t("profile.noResume");
 
   return (
-    <TabScreen title="Profile">
+    <TabScreen title={t("profile.title")} action={<LanguageSwitcher />}>
       {error ? (
-        <ErrorState message={error} onRetry={retry} />
+        <ErrorState message={t("common.profileLoadError")} onRetry={retry} />
       ) : !candidate ? (
-        <div role="status" aria-label="Loading profile" className="animate-pulse space-y-4">
+        <div role="status" aria-label={t("common.loading")} className="animate-pulse space-y-4">
           <div className="h-24 rounded-2xl bg-chip" />
           <div className="h-52 rounded-2xl bg-chip" />
         </div>
@@ -80,22 +83,25 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
                 {candidate.full_name}
               </h2>
               <p className="mt-0.5 truncate text-sm leading-5 text-muted">
-                {user.username ? `@${user.username} · ` : ""}from Telegram
+                {user.username ? `@${user.username} · ` : ""}{t("profile.fromTelegram")}
               </p>
             </div>
           </section>
 
           <dl className="rounded-2xl border border-line bg-surface px-4 py-1">
-            <Row label="Phone" value={formatPhone(candidate.phone)} />
-            <Row label="Age" value={String(candidate.age ?? "-")} />
-            <Row label="Field" value={candidate.major} />
-            <Row label="Experience" value={experienceLabel(candidate.experience_years)} />
-            <Row label="Resume" value={resumeLabel} muted={!candidate.resume_path} last />
+            <Row label={t("profile.phone")} value={formatPhone(candidate.phone)} />
+            <Row label={t("profile.age")} value={String(candidate.age ?? "-")} />
+            <Row label={t("profile.field")} value={majorLabel(candidate.major)} />
+            <Row
+              label={t("profile.experience")}
+              value={experienceLabel(candidate.experience_years, language, t)}
+            />
+            <Row label={t("profile.resume")} value={resumeLabel} muted={!candidate.resume_path} last />
           </dl>
 
           {candidate.experience_text ? (
             <section className="rounded-2xl border border-line bg-surface p-4">
-              <h3 className="mb-1.5 text-sm leading-5 font-bold text-muted">About your experience</h3>
+              <h3 className="mb-1.5 text-sm leading-5 font-bold text-muted">{t("profile.experienceAbout")}</h3>
               <p className="text-[15px] leading-[23px] whitespace-pre-line text-ink/90">
                 {candidate.experience_text}
               </p>
@@ -106,7 +112,7 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
             href="/profile/edit"
             className="flex h-[52px] items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white"
           >
-            Edit profile
+            {t("profile.edit")}
           </Link>
         </div>
       )}

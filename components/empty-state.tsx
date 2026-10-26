@@ -1,3 +1,5 @@
+import { useLanguage } from "@/components/language-provider";
+
 export function EmptyState({
   title,
   text,
@@ -24,6 +26,7 @@ export function EmptyState({
 }
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useLanguage();
   return (
     <div className="rounded-2xl border border-line bg-surface p-5 text-center">
       <p className="text-sm text-red-500">{message}</p>
@@ -32,7 +35,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
         onClick={onRetry}
         className="mt-4 h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white"
       >
-        Try again
+        {t("common.tryAgain")}
       </button>
     </div>
   );

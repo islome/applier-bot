@@ -1,4 +1,5 @@
-import { STATUS_LABEL, type ApplicationStatus } from "@/lib/application-types";
+import type { ApplicationStatus } from "@/lib/application-types";
+import { useLanguage } from "@/components/language-provider";
 
 const STYLES: Record<ApplicationStatus, string> = {
   new: "bg-chip text-chip-ink",
@@ -8,11 +9,12 @@ const STYLES: Record<ApplicationStatus, string> = {
 };
 
 export function StatusChip({ status }: { status: ApplicationStatus }) {
+  const { t } = useLanguage();
   return (
     <span
       className={`inline-block rounded-full px-2.5 py-1 text-xs leading-4 font-bold ${STYLES[status]}`}
     >
-      {STATUS_LABEL[status]}
+      {t(`status.${status}` as "status.new" | "status.reviewed" | "status.shortlisted" | "status.rejected")}
     </span>
   );
 }

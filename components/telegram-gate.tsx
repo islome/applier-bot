@@ -1,6 +1,7 @@
 "use client";
 
 import { useTelegram } from "@/lib/use-telegram";
+import { useLanguage } from "@/components/language-provider";
 import type { TelegramUser } from "@/types/telegram";
 
 export function Spinner() {
@@ -20,6 +21,7 @@ export function TelegramGate({
 }: {
   children: (tg: { user: TelegramUser; initData: string }) => React.ReactNode;
 }) {
+  const { t } = useLanguage();
   const { ready, isTelegram, user, initData } = useTelegram();
 
   if (!ready) return <Spinner />;
@@ -28,9 +30,9 @@ export function TelegramGate({
     return (
       <main className="flex flex-1 items-center justify-center p-6">
         <div className="w-full max-w-sm rounded-3xl border border-black/10 bg-white p-6 text-center dark:border-white/10 dark:bg-zinc-900">
-          <h1 className="text-2xl font-semibold tracking-tight">Open inside Telegram</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("profile.telegramOnly")}</h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            Open the bot and tap the App button to continue.
+            {t("profile.telegramHint")}
           </p>
         </div>
       </main>

@@ -5,10 +5,11 @@ import { useEffect, useState } from "react";
 import { PushScreen } from "@/components/app-shell";
 import { IconCheck } from "@/components/icons";
 import { Monogram } from "@/components/vacancy-card";
-import { STATUS_LABEL, type ApplicationSummary } from "@/lib/application-types";
+import type { ApplicationSummary } from "@/lib/application-types";
 import { haptic } from "@/lib/haptics";
-import { TYPE_LABEL, formatSalaryShort, timeAgo } from "@/lib/vacancy-format";
+import { employmentLabel, formatSalaryShort, timeAgo } from "@/lib/vacancy-format";
 import type { VacancyRow } from "@/lib/vacancy-types";
+import { useLanguage } from "@/components/language-provider";
 
 type State =
   | { kind: "loading" }
@@ -22,6 +23,7 @@ type State =
   | { kind: "error"; message: string };
 
 export function VacancyDetail({ id, initData }: { id: string; initData: string }) {
+  const { language, t, majorLabel } = useLanguage();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
   const [now] = useState(() => Date.now());
@@ -50,10 +52,11 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
         if (!cancelled) setState(next);
       })
       .catch((e) => {
+        console.error("vacancy detail load failed:", e);
         if (!cancelled) {
           setState({
             kind: "error",
-            message: e instanceof Error ? e.message : "Failed to load vacancy",
+            message: "load-error",
           });
         }
       });
@@ -88,7 +91,8 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
       if (res.status === 409 && body.code === "NO_PROFILE") {
         // profile was removed/never saved: flip the button to "Complete profile"
         setState({ ...state, hasProfile: false });
-        throw new Error("Complete your profile first");
+        setApplyError("complete-profile");
+        return;
       }
       if (!res.ok || !body.application) throw new Error(body.error ?? `HTTP ${res.status}`);
 
@@ -96,7 +100,8 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
       setState({ ...state, hasProfile: true, application: body.application });
     } catch (e) {
       haptic.error();
-      setApplyError(e instanceof Error ? e.message : "Could not send your application");
+      console.error("application submission failed:", e);
+      setApplyError("apply-error");
     } finally {
       setApplying(false);
     }
@@ -121,7 +126,8 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
       setConfirmCancel(false);
     } catch (e) {
       haptic.error();
-      setApplyError(e instanceof Error ? e.message : "Could not cancel your application");
+      console.error("application cancellation failed:", e);
+      setApplyError("cancel-error");
     } finally {
       setCancelling(false);
     }
@@ -129,18 +135,18 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
 
   if (state.kind === "loading") {
     return (
-      <PushScreen title="Vacancy">
-        <div role="status" aria-label="Loading vacancy" className="animate-pulse space-y-5">
+      <PushScreen title={t("vacancy.title")}>
+        <div role="status" aria-label={t("common.loading")} className="animate-pulse space-y-5">
           <div className="space-y-3">
             <div className="h-14 w-14 rounded-2xl bg-chip" />
             <div className="h-7 w-4/5 rounded bg-chip" />
             <div className="h-4 w-1/2 rounded bg-chip" />
           </div>
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="h-[66px] rounded-[14px] bg-chip" />
-            <div className="h-[66px] rounded-[14px] bg-chip" />
-            <div className="h-[66px] rounded-[14px] bg-chip" />
-            <div className="h-[66px] rounded-[14px] bg-chip" />
+            <div className="h-16.5 rounded-[14px] bg-chip" />
+            <div className="h-16.5 rounded-[14px] bg-chip" />
+            <div className="h-16.5 rounded-[14px] bg-chip" />
+            <div className="h-16.5 rounded-[14px] bg-chip" />
           </div>
           <div className="h-24 rounded bg-chip" />
         </div>
@@ -151,16 +157,16 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
   if (state.kind === "notfound" || state.kind === "error") {
     const notFound = state.kind === "notfound";
     return (
-      <PushScreen title="Vacancy">
+      <PushScreen title={t("vacancy.title")}>
         <div className="flex flex-col items-center px-6 py-16 text-center">
           <h2 className="text-lg font-bold">
-            {notFound ? "Vacancy not found" : "Could not load vacancy"}
+            {notFound ? t("vacancy.notFound") : t("vacancy.loadError")}
           </h2>
           <p className="mt-1 max-w-xs text-sm text-muted">
             {notFound
-              ? "It may have been closed or removed."
+              ? t("vacancy.unavailable")
               : state.kind === "error"
-                ? state.message
+                ? t("common.somethingWrong")
                 : ""}
           </p>
           {!notFound ? (
@@ -169,7 +175,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
               onClick={retry}
               className="mt-5 h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white"
             >
-              Try again
+              {t("common.tryAgain")}
             </button>
           ) : null}
         </div>
@@ -186,40 +192,50 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
 
   return (
     <PushScreen
-      title="Vacancy"
+      title={t("vacancy.title")}
       footer={
         <div className="space-y-2">
-          {applyError ? <p className="text-center text-sm text-red-500">{applyError}</p> : null}
+          {applyError ? (
+            <p className="text-center text-sm text-red-500">
+              {applyError === "cancel-error"
+                ? t("vacancy.cancelError")
+                : applyError === "complete-profile"
+                  ? t("vacancy.completeProfileError")
+                  : t("vacancy.applyError")}
+            </p>
+          ) : null}
           {state.application ? (
             confirmCancel ? (
               <>
                 <p className="text-center text-sm text-muted">
-                  Permanently cancel this application?
+                  {t("vacancy.cancelConfirm")}
                 </p>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     disabled={cancelling}
                     onClick={() => setConfirmCancel(false)}
-                    className="h-[52px] flex-1 rounded-[14px] border border-line text-base font-bold disabled:opacity-60"
+                    className="h-13 rounded-[14px] border border-line text-base font-bold disabled:opacity-60"
                   >
-                    Keep application
+                    {t("vacancy.keepApplication")}
                   </button>
                   <button
                     type="button"
                     disabled={cancelling}
                     onClick={cancelApplication}
-                    className="h-[52px] flex-1 rounded-[14px] bg-red-600 text-base font-bold text-white disabled:opacity-60"
+                    className="h-13 rounded-[14px] bg-red-600 text-base font-bold text-white disabled:opacity-60"
                   >
-                    {cancelling ? "Cancelling..." : "Confirm cancel"}
+                    {cancelling ? t("vacancy.cancelling") : t("vacancy.confirmCancel")}
                   </button>
                 </div>
               </>
             ) : (
               <div className="flex gap-2">
-                <div className="flex h-[52px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[14px] bg-chip text-center text-sm font-bold text-chip-ink">
+                <div className="flex h-13 min-w-0 flex-1 items-center justify-center gap-2 rounded-[14px] bg-chip text-center text-sm font-bold text-chip-ink">
                   <IconCheck className="h-5 w-5 flex-none" />
-                  <span className="truncate">Applied · {STATUS_LABEL[state.application.status]}</span>
+                  <span className="truncate">
+                    {t("vacancy.applied")} · {t(`status.${state.application.status}` as "status.new" | "status.reviewed" | "status.shortlisted" | "status.rejected")}
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -227,27 +243,27 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
                     setApplyError("");
                     setConfirmCancel(true);
                   }}
-                  className="h-[52px] flex-none rounded-[14px] border border-red-600/30 px-4 text-sm font-bold text-red-600"
+                  className="h-13 flex-none rounded-[14px] border border-red-600/30 px-4 text-sm font-bold text-red-600"
                 >
-                  Cancel
+                  {t("vacancy.cancel")}
                 </button>
               </div>
             )
           ) : !state.hasProfile ? (
             <Link
               href="/profile/edit"
-              className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white"
+              className="flex h-13 w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white"
             >
-              Complete profile to apply
+              {t("vacancy.completeProfile")}
             </Link>
           ) : (
             <button
               type="button"
               onClick={apply}
               disabled={applying}
-              className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white disabled:opacity-60"
+              className="flex h-13 w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white disabled:opacity-60"
             >
-              {applying ? "Sending..." : "Apply now"}
+              {applying ? t("vacancy.sending") : t("vacancy.apply")}
             </button>
           )}
         </div>
@@ -256,32 +272,32 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
       <div className="space-y-5">
         <section>
           <Monogram name={v.company} size="lg" />
-          <h2 className="mt-3.5 text-2xl leading-[30px] font-extrabold tracking-tight">{v.title}</h2>
-          <p className="mt-1 text-[15px] leading-[22px] text-muted">
-            {v.company} · Posted {timeAgo(v.created_at, now)}
+          <h2 className="mt-3.5 text-2xl leading-7.5 font-extrabold tracking-tight">{v.title}</h2>
+          <p className="mt-1 text-[15px] leading-5.5 text-muted">
+            {v.company} · {t("vacancy.posted")} {timeAgo(v.created_at, now, language, t)}
           </p>
         </section>
 
         <section className="grid grid-cols-2 gap-2.5">
-          <Fact label="Salary" value={formatSalaryShort(v)} valueClassName="text-money" />
-          <Fact label="Type" value={TYPE_LABEL[v.employment_type]} />
-          <Fact label="City" value={v.city} />
-          <Fact label="Field" value={v.major} />
+          <Fact label={t("vacancy.salary")} value={formatSalaryShort(v, t)} valueClassName="text-money" />
+          <Fact label={t("vacancy.type")} value={employmentLabel(v.employment_type, t)} />
+          <Fact label={t("vacancy.city")} value={v.city} />
+          <Fact label={t("vacancy.field")} value={majorLabel(v.major)} />
         </section>
 
         <section>
-          <h3 className="mb-1.5 text-base leading-[22px] font-bold">About the role</h3>
-          <p className="text-[15px] leading-[23px] whitespace-pre-line text-ink/90">
+          <h3 className="mb-1.5 text-base leading-5.5 font-bold">{t("vacancy.about")}</h3>
+          <p className="text-[15px] leading-5.5 whitespace-pre-line text-ink/90">
             {v.description}
           </p>
         </section>
 
         {requirements.length > 0 ? (
           <section>
-            <h3 className="mb-2 text-base leading-[22px] font-bold">Requirements</h3>
+            <h3 className="mb-2 text-base leading-5.5 font-bold">{t("vacancy.requirements")}</h3>
             <ul className="flex flex-col gap-2">
               {requirements.map((line, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-[15px] leading-[22px] text-ink/90">
+                <li key={i} className="flex items-start gap-2.5 text-[15px] leading-5.5 text-ink/90">
                   <IconCheck className="mt-px h-5 w-5 flex-none text-accent-text" />
                   <span>{line}</span>
                 </li>

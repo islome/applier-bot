@@ -5,27 +5,28 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { haptic } from "@/lib/haptics";
 import { useTelegramBackButton } from "@/lib/use-telegram-back-button";
+import { useLanguage } from "@/components/language-provider";
 import { IconBriefcase, IconFile, IconUser } from "@/components/icons";
 
 /* ------------------------------------------------------------------ */
 /* Tab bar                                                             */
 /* ------------------------------------------------------------------ */
 
-const TABS = [
-  { href: "/vacancies", label: "Vacancies", Icon: IconBriefcase },
-  { href: "/applications", label: "Applications", Icon: IconFile },
-  { href: "/profile", label: "Profile", Icon: IconUser },
-] as const;
-
 function TabBar() {
   const pathname = usePathname();
+  const { t } = useLanguage();
+  const tabs = [
+    { href: "/vacancies", label: t("tab.vacancies"), Icon: IconBriefcase },
+    { href: "/applications", label: t("tab.applications"), Icon: IconFile },
+    { href: "/profile", label: t("tab.profile"), Icon: IconUser },
+  ] as const;
 
   return (
     <nav
-      aria-label="Main"
+      aria-label={t("tab.main")}
       className="flex flex-none border-t border-line bg-surface px-3 pt-2 pb-[max(env(safe-area-inset-bottom),16px)]"
     >
-      {TABS.map(({ href, label, Icon }) => {
+      {tabs.map(({ href, label, Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
@@ -73,7 +74,7 @@ export function TabScreen({
       className={`flex items-start justify-between gap-3 px-5 pt-4 pb-3 ${scrollHeader ? "" : "flex-none"}`}
     >
       <div className="min-w-0">
-        <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">{title}</h1>
+        <h1 className="text-[28px] leading-8.5 font-extrabold tracking-tight">{title}</h1>
         {subtitle ? <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p> : null}
       </div>
       {action}

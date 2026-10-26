@@ -7,10 +7,12 @@ import { FilterSheet, type FilterOption } from "@/components/filter-sheet";
 import { IconFilter, IconSearch } from "@/components/icons";
 import { VacancyCard, VacancyCardSkeleton } from "@/components/vacancy-card";
 import { haptic } from "@/lib/haptics";
+import { useLanguage } from "@/components/language-provider";
 import type { VacancyRow } from "@/lib/vacancy-types";
 import type { TelegramUser } from "@/types/telegram";
 
 export function VacanciesScreen({ user, initData }: { user: TelegramUser; initData: string }) {
+  const { t, majorLabel } = useLanguage();
   const [vacancies, setVacancies] = useState<VacancyRow[] | null>(null);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
@@ -34,7 +36,8 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
         if (!cancelled) setVacancies(body.vacancies);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load vacancies");
+        console.error("vacancies load failed:", e);
+        if (!cancelled) setError("load-error");
       });
 
     return () => {
@@ -63,16 +66,16 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
   const showFilter = majorCounts.length > 1;
 
   const options: FilterOption[] = [
-    { value: null, label: "All fields", count: total },
+    { value: null, label: t("vacancies.allFields"), count: total },
     ...majorCounts.map(([m, count]) => ({ value: m, label: m, count })),
   ];
 
-  let subtitle = "Loading...";
-  if (error) subtitle = "Something went wrong";
+  let subtitle = t("vacancies.loading");
+  if (error) subtitle = t("common.somethingWrong");
   else if (vacancies) {
     subtitle = filtering
-      ? `${filtered.length} of ${total}`
-      : `${total} open ${total === 1 ? "position" : "positions"}`;
+      ? t("vacancies.filteredCount", { shown: filtered.length, total })
+      : t("vacancies.count", { count: total });
   }
 
   function retry() {
@@ -94,8 +97,8 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
         <input
           ref={searchInputRef}
           type="search"
-          aria-label="Search vacancies"
-          placeholder="Search vacancies"
+          aria-label={t("vacancies.search")}
+          placeholder={t("vacancies.search")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -106,7 +109,7 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
         />
         <button
           type="button"
-          aria-label="Finish search"
+          aria-label={t("vacancies.finishSearch")}
           onClick={() => searchInputRef.current?.blur()}
           className="flex h-9 w-9 flex-none items-center justify-center rounded-full text-muted"
         >
@@ -122,13 +125,17 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
             setSheetOpen(true);
           }}
           aria-haspopup="dialog"
-          aria-label={major ? `Field: ${major}. Change filter` : "Filter by field"}
+          aria-label={
+            major
+              ? `${t("vacancies.field")}: ${majorLabel(major)}. ${t("vacancies.changeField")}`
+              : t("vacancies.field")
+          }
           className={`glass flex h-12 flex-none items-center gap-2 rounded-full px-4 text-sm font-semibold ${
             major ? "border-accent/60 text-accent-text" : "text-ink"
           }`}
         >
-          <IconFilter className="h-[18px] w-[18px] flex-none" />
-          <span className="max-w-[104px] truncate">{major ?? "Field"}</span>
+          <IconFilter className="h-4.5 w-4.5 flex-none" />
+          <span className="max-w-26 truncate">{major ? majorLabel(major) : t("vacancies.field")}</span>
         </button>
       ) : null}
     </div>
@@ -137,7 +144,7 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
   return (
     <>
       <TabScreen
-        title="Vacancies"
+        title={t("vacancies.title")}
         subtitle={subtitle}
         toolbar={toolbar}
         scrollHeader
@@ -145,19 +152,19 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
       >
         {error ? (
           <div className="rounded-2xl border border-line bg-surface p-5 text-center">
-            <p className="text-sm text-red-500">{error}</p>
+            <p className="text-sm text-red-500">{t("common.vacanciesLoadError")}</p>
             <button
               type="button"
               onClick={retry}
               className="mt-4 h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white"
             >
-              Try again
+              {t("common.tryAgain")}
             </button>
           </div>
         ) : !vacancies ? (
           <div
             role="status"
-            aria-label="Loading vacancies"
+            aria-label={t("vacancies.loading")}
             className="flex animate-pulse flex-col gap-3"
           >
             <VacancyCardSkeleton />
@@ -166,20 +173,20 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
           </div>
         ) : total === 0 ? (
           <EmptyState
-            title="No vacancies yet"
-            text="New positions will appear here. Check back soon."
+            title={t("vacancies.noVacancies")}
+            text={t("vacancies.checkBack")}
           />
         ) : filtered.length === 0 ? (
           <EmptyState
-            title="Nothing found"
-            text="Try a different word or remove the filter."
+            title={t("vacancies.nothingFound")}
+            text={t("vacancies.changeSearch")}
             action={
               <button
                 type="button"
                 onClick={clearFilters}
                 className="mt-5 h-11 rounded-xl border border-line bg-surface px-5 text-sm font-bold"
               >
-                Clear filters
+                {t("vacancies.clearFilters")}
               </button>
             }
           />
@@ -196,8 +203,11 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
 
       {sheetOpen ? (
         <FilterSheet
-          title="Field"
-          options={options}
+          title={t("vacancies.field")}
+          options={options.map((option) => ({
+            ...option,
+            label: option.value ? majorLabel(option.value) : option.label,
+          }))}
           selected={major}
           onSelect={(value) => {
             setMajor(value);
@@ -211,10 +221,11 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
 }
 
 function Avatar({ user }: { user: TelegramUser }) {
+  const { t } = useLanguage();
   return (
     <Link
       href="/profile"
-      aria-label="Open profile"
+      aria-label={t("vacancies.openProfile")}
       className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-full bg-accent text-[17px] font-bold text-white"
     >
       {user.photo_url ? (

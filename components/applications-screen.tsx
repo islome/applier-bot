@@ -11,8 +11,10 @@ import { Monogram } from "@/components/vacancy-card";
 import type { ApplicationRow } from "@/lib/application-types";
 import { haptic } from "@/lib/haptics";
 import { timeAgo } from "@/lib/vacancy-format";
+import { useLanguage } from "@/components/language-provider";
 
 export function ApplicationsScreen({ initData }: { initData: string }) {
+  const { language, t } = useLanguage();
   const [items, setItems] = useState<ApplicationRow[] | null>(null);
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -34,7 +36,8 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
         if (!cancelled) setItems(body.applications);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load applications");
+        console.error("applications load failed:", e);
+        if (!cancelled) setError("load-error");
       });
 
     return () => {
@@ -71,22 +74,28 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
       setItems((current) => current?.filter((item) => item.id !== applicationId) ?? null);
       setConfirmingId(null);
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Could not cancel application");
+      console.error("application cancellation failed:", e);
+      setActionError("cancel-error");
     } finally {
       setDeletingId(null);
     }
   }
 
-  let subtitle = "Loading...";
-  if (error) subtitle = "Something went wrong";
-  else if (items) subtitle = items.length === 0 ? "Nothing sent yet" : `${items.length} sent`;
+  let subtitle = t("applications.loading");
+  if (error) subtitle = t("common.somethingWrong");
+  else if (items) {
+    subtitle =
+      items.length === 0
+        ? t("applications.noneSent")
+        : t("applications.count", { count: items.length });
+  }
 
   return (
-    <TabScreen title="Applications" subtitle={subtitle}>
+    <TabScreen title={t("applications.title")} subtitle={subtitle}>
       {error ? (
-        <ErrorState message={error} onRetry={retry} />
+        <ErrorState message={t("common.applicationsLoadError")} onRetry={retry} />
       ) : !items ? (
-        <div role="status" aria-label="Loading applications" className="flex animate-pulse flex-col gap-3">
+        <div role="status" aria-label={t("applications.loading")} className="flex animate-pulse flex-col gap-3">
           {[0, 1, 2].map((i) => (
             <div key={i} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4">
               <div className="h-11 w-11 flex-none rounded-xl bg-chip" />
@@ -101,14 +110,14 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
       ) : items.length === 0 ? (
         <EmptyState
           icon={<IconFile className="h-7 w-7" />}
-          title="No applications yet"
-          text="When you apply to a vacancy, it shows up here with its status."
+          title={t("applications.emptyTitle")}
+          text={t("applications.emptyText")}
           action={
             <Link
               href="/vacancies"
               className="mt-6 flex h-12 items-center rounded-[14px] bg-accent px-6 text-[15px] font-bold text-white"
             >
-              Browse vacancies
+              {t("applications.browse")}
             </Link>
           }
         />
@@ -116,7 +125,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
         <>
           {actionError && (
             <p role="alert" className="mb-3 rounded-xl bg-red-500/10 p-3 text-sm text-red-500">
-              {actionError}
+              {t("applications.cancelError")}
             </p>
           )}
           <ul className="flex flex-col gap-3">
@@ -129,20 +138,20 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                 >
                   <Monogram name={a.vacancy.company} />
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-base leading-[22px] font-bold">{a.vacancy.title}</h2>
-                    <p className="mt-0.5 text-[13px] leading-[18px] text-muted">
+                    <h2 className="text-base leading-5.5 font-bold">{a.vacancy.title}</h2>
+                    <p className="mt-0.5 text-[13px] leading-4.5 text-muted">
                       {a.vacancy.company} · {a.vacancy.city}
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <StatusChip status={a.status} />
-                      <span className="text-xs text-muted">{timeAgo(a.created_at, now)}</span>
+                      <span className="text-xs text-muted">{timeAgo(a.created_at, now, language, t)}</span>
                     </div>
                   </div>
                   <IconChevronRight className="h-5 w-5 flex-none text-muted" />
                 </Link>
                 {confirmingId === a.id ? (
                   <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
-                    <p className="text-sm text-muted">Permanently remove this application?</p>
+                    <p className="text-sm text-muted">{t("applications.removeConfirm")}</p>
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -150,7 +159,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                         onClick={() => setConfirmingId(null)}
                         className="min-h-10 rounded-xl border border-line px-3 text-sm font-semibold disabled:opacity-60"
                       >
-                        Keep
+                        {t("applications.keep")}
                       </button>
                       <button
                         type="button"
@@ -158,7 +167,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                         onClick={() => deleteApplication(a.id)}
                         className="min-h-10 rounded-xl bg-red-600 px-3 text-sm font-semibold text-white disabled:opacity-60"
                       >
-                        {deletingId === a.id ? "Removing..." : "Remove"}
+                        {deletingId === a.id ? t("applications.removing") : t("applications.remove")}
                       </button>
                     </div>
                   </div>
@@ -172,7 +181,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                       }}
                       className="min-h-10 text-sm font-semibold text-red-600"
                     >
-                      Cancel application
+                      {t("applications.cancel")}
                     </button>
                   </div>
                 )}

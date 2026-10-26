@@ -16,6 +16,7 @@ import {
 } from "@/lib/candidate-schema";
 import { MAJORS } from "@/lib/constants";
 import { haptic } from "@/lib/haptics";
+import { translateFormError, useLanguage } from "@/components/language-provider";
 import type { TelegramUser } from "@/types/telegram";
 
 type FormState = {
@@ -31,10 +32,6 @@ const inputClass =
   "h-12 w-full rounded-xl border border-field bg-surface px-3.5 text-base text-ink outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/25";
 
 const RESUME_ACCEPT = RESUME_ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(",");
-// non-breaking spaces keep "max 2 MB" on one line when the hint wraps
-const RESUME_HINT = `${RESUME_ALLOWED_EXTENSIONS.map((ext) => ext.toUpperCase()).join(", ")} · max\u00a0${
-  RESUME_MAX_SIZE_BYTES / (1024 * 1024)
-}\u00a0MB`;
 
 function formatSize(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -51,6 +48,7 @@ export function EditProfileScreen({
   /** First-time onboarding: no back button, continues to /vacancies after saving */
   welcome: boolean;
 }) {
+  const { t, majorLabel } = useLanguage();
   const router = useRouter();
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -98,7 +96,8 @@ export function EditProfileScreen({
         setLoaded(true);
       })
       .catch((e) => {
-        if (!cancelled) setLoadError(e instanceof Error ? e.message : "Failed to load profile");
+        console.error("profile load failed:", e);
+        if (!cancelled) setLoadError("load-error");
       });
 
     return () => {
@@ -129,10 +128,10 @@ export function EditProfileScreen({
         ...prev,
         resume:
           file.size > RESUME_MAX_SIZE_BYTES
-            ? `Resume must be ${RESUME_MAX_SIZE_BYTES / (1024 * 1024)} MB or smaller`
+            ? t("profile.resumeTooLarge")
             : file.size === 0
-              ? "Resume file cannot be empty"
-              : "Choose a PDF, DOC, DOCX, ZIP, RTF, TXT, or ODT file",
+              ? t("profile.resumeEmpty")
+              : t("profile.resumeFormat"),
       }));
       return;
     }
@@ -159,7 +158,7 @@ export function EditProfileScreen({
       setErrors((prev) => ({
         ...prev,
         ...Object.fromEntries(
-          Object.entries(fieldErrors).map(([k, v]) => [k, v?.[0] ?? ""]),
+          Object.entries(fieldErrors).map(([k, v]) => [k, translateFormError(v?.[0], t)]),
         ),
       }));
       haptic.error();
@@ -191,18 +190,19 @@ export function EditProfileScreen({
       router.replace(welcome ? "/vacancies" : "/profile");
     } catch (err) {
       haptic.error();
-      setSaveError(err instanceof Error ? err.message : "Something went wrong");
+      console.error("profile save failed:", err);
+      setSaveError("save-error");
       setSaving(false);
     }
   }
 
-  const title = welcome ? "Your profile" : "Edit profile";
+  const title = welcome ? t("profile.yourProfile") : t("profile.editTitle");
 
   if (loadError) {
     return (
       <PushScreen title={title} fallbackHref="/profile" backEnabled={!welcome}>
         <ErrorState
-          message={loadError}
+          message={t("common.profileLoadError")}
           onRetry={() => {
             setLoadError("");
             setReloadKey((k) => k + 1);
@@ -215,7 +215,7 @@ export function EditProfileScreen({
   if (!loaded) {
     return (
       <PushScreen title={title} fallbackHref="/profile" backEnabled={!welcome}>
-        <div role="status" aria-label="Loading profile" className="animate-pulse space-y-4">
+        <div role="status" aria-label={t("common.loading")} className="animate-pulse space-y-4">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="h-[72px] rounded-xl bg-chip" />
           ))}
@@ -227,13 +227,13 @@ export function EditProfileScreen({
   const resumeTitle = resumeFile
     ? resumeFile.name
     : hasSavedResume
-      ? "Resume saved"
-      : "Upload resume";
+      ? t("profile.resumeSaved")
+      : t("profile.uploadResume");
   const resumeSub = resumeFile
-    ? `${formatSize(resumeFile.size)} · tap to change`
+    ? `${formatSize(resumeFile.size)} · ${t("profile.tapToChange")}`
     : hasSavedResume
-      ? "Tap to replace it"
-      : RESUME_HINT;
+      ? t("profile.tapToReplace")
+      : t("profile.resumeHint");
 
   return (
     <PushScreen
@@ -242,26 +242,28 @@ export function EditProfileScreen({
       backEnabled={!welcome}
       footer={
         <div className="space-y-2">
-          {saveError ? <p className="text-center text-sm text-red-500">{saveError}</p> : null}
+          {saveError ? (
+            <p className="text-center text-sm text-red-500">{t("common.profileSaveError")}</p>
+          ) : null}
           <button
             type="submit"
             form="profile-form"
             disabled={saving}
             className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white disabled:opacity-60"
           >
-            {saving ? "Saving..." : welcome ? "Continue" : "Save profile"}
+            {saving ? t("profile.saving") : welcome ? t("profile.continue") : t("profile.save")}
           </button>
         </div>
       }
     >
       {welcome ? (
         <p className="mb-5 text-[15px] leading-[22px] text-muted">
-          Hi, {user.first_name}. Tell us a bit about yourself so HR can match you with vacancies.
+          {t("profile.welcome", { name: user.first_name })}
         </p>
       ) : null}
 
       <form id="profile-form" onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-        <Field label="Full name" error={errors.full_name}>
+        <Field label={t("profile.fullName")} error={translateFormError(errors.full_name, t)}>
           <input
             className={inputClass}
             value={form.full_name}
@@ -271,7 +273,7 @@ export function EditProfileScreen({
           />
         </Field>
 
-        <Field label="Phone" error={errors.phone}>
+        <Field label={t("profile.phoneField")} error={translateFormError(errors.phone, t)}>
           <input
             className={inputClass}
             value={form.phone}
@@ -283,7 +285,7 @@ export function EditProfileScreen({
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Age" error={errors.age}>
+          <Field label={t("profile.ageField")} error={translateFormError(errors.age, t)}>
             <input
               className={inputClass}
               value={form.age}
@@ -293,7 +295,7 @@ export function EditProfileScreen({
             />
           </Field>
 
-          <Field label="Experience (years)" error={errors.experience_years}>
+          <Field label={t("profile.experienceYears")} error={translateFormError(errors.experience_years, t)}>
             <input
               className={inputClass}
               value={form.experience_years}
@@ -304,7 +306,7 @@ export function EditProfileScreen({
           </Field>
         </div>
 
-        <Field label="Field" error={errors.major}>
+        <Field label={t("profile.field")} error={translateFormError(errors.major, t)}>
           <div className="relative">
             <select
               className={`${inputClass} appearance-none pr-11`}
@@ -312,11 +314,11 @@ export function EditProfileScreen({
               onChange={(e) => update("major", e.target.value)}
             >
               <option value="" disabled>
-                Choose...
+                {t("profile.chooseField")}
               </option>
               {MAJORS.map((m) => (
                 <option key={m} value={m}>
-                  {m}
+                  {majorLabel(m)}
                 </option>
               ))}
             </select>
@@ -324,13 +326,13 @@ export function EditProfileScreen({
           </div>
         </Field>
 
-        <Field label="About your experience" hint="optional" error={errors.experience_text}>
+        <Field label={t("profile.aboutExperience")} hint={t("profile.optional")} error={translateFormError(errors.experience_text, t)}>
           <textarea
             className={`${inputClass} h-[104px] resize-none py-3 leading-[22px]`}
             value={form.experience_text}
             onChange={(e) => update("experience_text", e.target.value)}
             maxLength={1000}
-            placeholder="Where you worked, what you did, key skills..."
+            placeholder={t("profile.experiencePlaceholder")}
           />
         </Field>
 
@@ -338,7 +340,7 @@ export function EditProfileScreen({
             and keyboard users can still focus the (visually hidden) input. */}
         <div>
           <span className="mb-1.5 block text-[13px] leading-[18px] font-semibold text-chip-ink">
-            Resume <span className="ml-1 font-medium text-muted">(optional)</span>
+            {t("profile.resumeOptional")}
           </span>
 
           <label
@@ -375,11 +377,13 @@ export function EditProfileScreen({
               onClick={removeSelectedResume}
               className="mt-2 h-9 text-sm font-semibold text-accent-text"
             >
-              Remove selected file
+              {t("profile.removeFile")}
             </button>
           ) : null}
           {errors.resume ? (
-            <span className="mt-1 block text-xs text-red-500">{errors.resume}</span>
+            <span className="mt-1 block text-xs text-red-500">
+              {translateFormError(errors.resume, t)}
+            </span>
           ) : null}
         </div>
       </form>
