@@ -8,6 +8,7 @@ create table if not exists public.candidates (
   username         text,
   language_code    text,
   photo_url        text,
+  resume_path      text,
 
   -- Profile the candidate fills in
   full_name        text not null check (char_length(full_name) between 2 and 100),
@@ -46,3 +47,24 @@ create trigger candidates_set_updated_at
 -- Security: RLS ON and NO policies = the anon key can't read or write anything.
 -- Only our server (service role key) touches this table.
 alter table public.candidates enable row level security;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'candidate-resumes',
+  'candidate-resumes',
+  false,
+  2097152,
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/zip',
+    'application/rtf',
+    'text/plain',
+    'application/vnd.oasis.opendocument.text'
+  ]
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;

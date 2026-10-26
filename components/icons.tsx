@@ -52,6 +52,13 @@ export const IconFile = (p: IconProps) => (
   </Svg>
 );
 
+export const IconUpload = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <path d="m17 8-5-5-5 5M12 3v12" />
+  </Svg>
+);
+
 export const IconUser = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="12" cy="8" r="4" />

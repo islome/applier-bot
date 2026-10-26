@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { MAJORS } from "@/lib/constants";
-import { candidateInputSchema, type CandidateRow } from "@/lib/candidate-schema";
+import {
+  candidateInputSchema,
+  isAllowedResumeFile,
+  RESUME_ALLOWED_EXTENSIONS,
+  RESUME_MAX_SIZE_BYTES,
+  type CandidateRow,
+} from "@/lib/candidate-schema";
+import { IconUpload } from "@/components/icons";
 
 type Props = {
   initData: string;
@@ -38,8 +45,12 @@ export function CandidateForm({ initData, defaultName, onSaved }: Props) {
   const [status, setStatus] = useState<Status>("loading");
   const [isExisting, setIsExisting] = useState(false);
   const [message, setMessage] = useState("");
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [hasSavedResume, setHasSavedResume] = useState(false);
+  const resumeInputRef = useRef<HTMLInputElement>(null);
 
   const authHeaders = { Authorization: `tma ${initData}` };
+  const resumeAccept = RESUME_ALLOWED_EXTENSIONS.map((extension) => `.${extension}`).join(",");
 
   // Load the saved profile (if any) so re-opening the app edits instead of starting over
   useEffect(() => {
@@ -54,6 +65,7 @@ export function CandidateForm({ initData, defaultName, onSaved }: Props) {
         if (cancelled) return;
         if (candidate) {
           setIsExisting(true);
+          setHasSavedResume(Boolean(candidate.resume_path));
           setForm({
             full_name: candidate.full_name,
             phone: candidate.phone,
@@ -82,8 +94,33 @@ export function CandidateForm({ initData, defaultName, onSaved }: Props) {
     if (status === "saved") setStatus("idle");
   }
 
+  function handleResumeChange(file: File | undefined) {
+    if (!file) return;
+
+    if (!isAllowedResumeFile(file)) {
+      setResumeFile(null);
+      if (resumeInputRef.current) resumeInputRef.current.value = "";
+      setErrors((prev) => ({
+        ...prev,
+        resume:
+          file.size > RESUME_MAX_SIZE_BYTES
+            ? "Resume must be 2 MB or smaller"
+            : file.size === 0
+              ? "Resume file cannot be empty"
+            : "Choose a PDF, DOC, DOCX, ZIP, RTF, TXT, or ODT file",
+      }));
+      return;
+    }
+
+    setResumeFile(file);
+    setErrors((prev) => ({ ...prev, resume: "" }));
+    if (status === "saved") setStatus("idle");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (errors.resume) return;
 
     // Client-side validation with the SAME schema the server uses
     const parsed = candidateInputSchema.safeParse(form);
@@ -101,10 +138,14 @@ export function CandidateForm({ initData, defaultName, onSaved }: Props) {
     setMessage("");
 
     try {
+      const body = new FormData();
+      body.set("candidate", JSON.stringify(parsed.data));
+      if (resumeFile) body.set("resume", resumeFile);
+
       const res = await fetch("/api/candidate", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify(parsed.data),
+        headers: authHeaders,
+        body,
       });
 
       if (!res.ok) {
@@ -113,6 +154,11 @@ export function CandidateForm({ initData, defaultName, onSaved }: Props) {
       }
 
       setIsExisting(true);
+      if (resumeFile) {
+        setHasSavedResume(true);
+        setResumeFile(null);
+        if (resumeInputRef.current) resumeInputRef.current.value = "";
+      }
       setStatus("saved");
       setMessage("Saved! HR will review your profile.");
       onSaved?.();
@@ -205,6 +251,36 @@ export function CandidateForm({ initData, defaultName, onSaved }: Props) {
           placeholder="Where you worked, what you did, key skills..."
         />
       </Field>
+
+      <div>
+        <span className="mb-1.5 block text-sm font-medium text-zinc-600 dark:text-zinc-300">
+          Resume (optional)
+        </span>
+        <input
+          ref={resumeInputRef}
+          type="file"
+          accept={resumeAccept}
+          className="sr-only"
+          onChange={(e) => handleResumeChange(e.target.files?.[0])}
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+        <button
+          type="button"
+          onClick={() => resumeInputRef.current?.click()}
+          disabled={busy}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-black/20 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition hover:border-blue-500 hover:text-blue-600 disabled:opacity-60 dark:border-white/20 dark:bg-zinc-800 dark:text-zinc-200"
+        >
+          <IconUpload className="h-5 w-5" />
+          {resumeFile ? "Change resume" : hasSavedResume ? "Replace resume" : "Upload resume"}
+        </button>
+        <span className="mt-1.5 block break-all text-xs text-zinc-500 dark:text-zinc-400">
+          {resumeFile?.name ?? (hasSavedResume ? "A resume is saved to your profile" : "PDF, DOC, DOCX, ZIP, RTF, TXT, or ODT · max 2 MB")}
+        </span>
+        {errors.resume && (
+          <span className="mt-1 block text-xs text-red-500">{errors.resume}</span>
+        )}
+      </div>
 
       {message && (
         <p

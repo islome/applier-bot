@@ -5,7 +5,6 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 const COLUMNS =
   "id, title, company, city, major, employment_type, salary_min, salary_max, salary_currency, description, requirements, created_at";
 
-/** GET /api/vacancies -> all active vacancies, newest first (Telegram users only) */
 export async function GET(req: Request) {
   const auth = authFromRequest(req);
   if (!auth) {
