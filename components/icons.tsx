@@ -1,4 +1,3 @@
-// Small inline stroke icons (24x24 grid). Decorative: always aria-hidden.
 type IconProps = { className?: string };
 
 function Svg({ className, children }: IconProps & { children: React.ReactNode }) {
@@ -28,6 +27,13 @@ export const IconSearch = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="11" cy="11" r="7" />
     <path d="M21 21l-4.3-4.3" />
+  </Svg>
+);
+
+export const IconFilter = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3" />
+    <path d="M14 2v4M8 10v4M16 18v4" />
   </Svg>
 );
 

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { TabScreen } from "@/components/app-shell";
-import { IconSearch } from "@/components/icons";
+import { FilterSheet, type FilterOption } from "@/components/filter-sheet";
+import { IconFilter, IconSearch } from "@/components/icons";
 import { VacancyCard, VacancyCardSkeleton } from "@/components/vacancy-card";
 import { haptic } from "@/lib/haptics";
 import type { VacancyRow } from "@/lib/vacancy-types";
@@ -15,6 +16,7 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState("");
   const [major, setMajor] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   // Fixed once per mount, so "2h ago" labels are stable between renders
   const [now] = useState(() => Date.now());
 
@@ -39,11 +41,11 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
     };
   }, [initData, reloadKey]);
 
-  // Filter chips: the majors that actually exist in the data, most common first
-  const majors = useMemo(() => {
+  // Fields that actually exist in the data, most common first
+  const majorCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const v of vacancies ?? []) counts.set(v.major, (counts.get(v.major) ?? 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([m]) => m);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
   }, [vacancies]);
 
   const filtered = useMemo(() => {
@@ -57,6 +59,12 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
 
   const total = vacancies?.length ?? 0;
   const filtering = query.trim() !== "" || major !== null;
+  const showFilter = majorCounts.length > 1;
+
+  const options: FilterOption[] = [
+    { value: null, label: "All fields", count: total },
+    ...majorCounts.map(([m, count]) => ({ value: m, label: m, count })),
+  ];
 
   let subtitle = "Loading...";
   if (error) subtitle = "Something went wrong";
@@ -77,114 +85,115 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
     setMajor(null);
   }
 
-  const toolbar = (
-    <div className="pb-3">
-      <div className="px-5 pb-3">
-        <label className="flex h-12 items-center gap-2.5 rounded-[14px] border border-line bg-surface px-3.5 text-muted focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/25">
-          <IconSearch className="h-5 w-5 flex-none" />
-          <input
-            type="search"
-            aria-label="Search vacancies"
-            placeholder="Search role or company"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            enterKeyHint="search"
-            className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
-          />
-        </label>
-      </div>
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
 
-      {majors.length > 1 ? (
-        <div className="flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <Chip active={major === null} onClick={() => setMajor(null)}>
-            All
-          </Chip>
-          {majors.map((m) => (
-            <Chip key={m} active={major === m} onClick={() => setMajor(major === m ? null : m)}>
-              {m}
-            </Chip>
-          ))}
-        </div>
+  const toolbar = (
+    <div className="flex items-center gap-2">
+      <label className="glass flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full px-4 text-muted focus-within:ring-2 focus-within:ring-accent/30">
+        <IconSearch className="h-5 w-5 flex-none" />
+        <input
+          type="search"
+          aria-label="Search vacancies"
+          placeholder="Search vacancies"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          enterKeyHint="search"
+          className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
+        />
+      </label>
+
+      {showFilter ? (
+        <button
+          type="button"
+          onClick={() => {
+            haptic.light();
+            setSheetOpen(true);
+          }}
+          aria-haspopup="dialog"
+          aria-label={major ? `Field: ${major}. Change filter` : "Filter by field"}
+          className={`glass flex h-12 flex-none items-center gap-2 rounded-full px-4 text-sm font-semibold ${
+            major ? "border-accent/60 text-accent-text" : "text-ink"
+          }`}
+        >
+          <IconFilter className="h-[18px] w-[18px] flex-none" />
+          <span className="max-w-[104px] truncate">{major ?? "Field"}</span>
+        </button>
       ) : null}
     </div>
   );
 
   return (
-    <TabScreen
-      title="Vacancies"
-      subtitle={subtitle}
-      toolbar={toolbar}
-      action={<Avatar user={user} />}
-    >
-      {error ? (
-        <div className="rounded-2xl border border-line bg-surface p-5 text-center">
-          <p className="text-sm text-red-500">{error}</p>
-          <button
-            type="button"
-            onClick={retry}
-            className="mt-4 h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white"
-          >
-            Try again
-          </button>
-        </div>
-      ) : !vacancies ? (
-        <div role="status" aria-label="Loading vacancies" className="flex animate-pulse flex-col gap-3">
-          <VacancyCardSkeleton />
-          <VacancyCardSkeleton />
-          <VacancyCardSkeleton />
-        </div>
-      ) : total === 0 ? (
-        <EmptyState title="No vacancies yet" text="New positions will appear here. Check back soon." />
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          title="Nothing found"
-          text="Try a different word or remove the filter."
-          action={
+    <>
+      <TabScreen
+        title="Vacancies"
+        subtitle={subtitle}
+        toolbar={toolbar}
+        action={<Avatar user={user} />}
+      >
+        {error ? (
+          <div className="rounded-2xl border border-line bg-surface p-5 text-center">
+            <p className="text-sm text-red-500">{error}</p>
             <button
               type="button"
-              onClick={clearFilters}
-              className="mt-5 h-11 rounded-xl border border-line bg-surface px-5 text-sm font-bold"
+              onClick={retry}
+              className="mt-4 h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white"
             >
-              Clear filters
+              Try again
             </button>
-          }
-        />
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {filtered.map((v) => (
-            <li key={v.id}>
-              <VacancyCard vacancy={v} now={now} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </TabScreen>
-  );
-}
+          </div>
+        ) : !vacancies ? (
+          <div
+            role="status"
+            aria-label="Loading vacancies"
+            className="flex animate-pulse flex-col gap-3"
+          >
+            <VacancyCardSkeleton />
+            <VacancyCardSkeleton />
+            <VacancyCardSkeleton />
+          </div>
+        ) : total === 0 ? (
+          <EmptyState
+            title="No vacancies yet"
+            text="New positions will appear here. Check back soon."
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title="Nothing found"
+            text="Try a different word or remove the filter."
+            action={
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="mt-5 h-11 rounded-xl border border-line bg-surface px-5 text-sm font-bold"
+              >
+                Clear filters
+              </button>
+            }
+          />
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {filtered.map((v) => (
+              <li key={v.id}>
+                <VacancyCard vacancy={v} now={now} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </TabScreen>
 
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={() => {
-        haptic.select();
-        onClick();
-      }}
-      className={`h-10 flex-none rounded-full border px-4 text-sm font-semibold whitespace-nowrap ${
-        active ? "border-ink bg-ink text-app" : "border-line bg-surface text-ink"
-      }`}
-    >
-      {children}
-    </button>
+      {sheetOpen ? (
+        <FilterSheet
+          title="Field"
+          options={options}
+          selected={major}
+          onSelect={(value) => {
+            setMajor(value);
+            setSheetOpen(false);
+          }}
+          onClose={closeSheet}
+        />
+      ) : null}
+    </>
   );
 }
 

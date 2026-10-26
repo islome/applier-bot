@@ -61,7 +61,7 @@ export function TabScreen({
   subtitle?: string;
   /** Right side of the header (e.g. avatar) */
   action?: React.ReactNode;
-  /** Pinned under the header, does not scroll (search, filter chips) */
+  /** Sticks under the header while the list scrolls beneath it (search + filter) */
   toolbar?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -69,20 +69,18 @@ export function TabScreen({
     <div className="flex h-dvh flex-col bg-app text-ink">
       <header className="flex flex-none items-start justify-between gap-3 px-5 pt-4 pb-3">
         <div className="min-w-0">
-          <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">
-            {title}
-          </h1>
-          {subtitle ? (
-            <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p>
-          ) : null}
+          <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">{title}</h1>
+          {subtitle ? <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p> : null}
         </div>
         {action}
       </header>
 
-      {toolbar ? <div className="flex-none">{toolbar}</div> : null}
-
-      <main className="flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
-        {children}
+      <main className="flex-1 overflow-y-auto overscroll-contain pb-4">
+        {toolbar ? (
+          // Transparent on purpose: the glass controls blur the cards passing underneath
+          <div className="sticky top-0 z-10 px-5 pt-1 pb-3">{toolbar}</div>
+        ) : null}
+        <div className="px-5">{children}</div>
       </main>
 
       <TabBar />
@@ -118,25 +116,20 @@ export function PushScreen({
     else router.replace(fallbackHref);
   }, [router, fallbackHref]);
 
-  // Telegram's own back button does the same thing as ours
+  // Telegram's native BackButton (top-left, in Telegram's own header)
   useTelegramBackButton(goBack);
 
   return (
     <div className="flex h-dvh flex-col bg-app text-ink">
+      {/* No in-app back button: Telegram already shows its own BackButton in its top bar */}
       <header className="relative flex h-14 flex-none items-center justify-center px-14">
-        <h1 className="min-w-0 truncate text-[17px] leading-6 font-bold">
-          {title}
-        </h1>
+        <h1 className="min-w-0 truncate text-[17px] leading-6 font-bold">{title}</h1>
         {action ? (
-          <div className="absolute right-3 flex h-11 w-11 items-center justify-center">
-            {action}
-          </div>
+          <div className="absolute right-3 flex h-11 w-11 items-center justify-center">{action}</div>
         ) : null}
       </header>
 
-      <main className="flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-6">
-        {children}
-      </main>
+      <main className="flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-6">{children}</main>
 
       {footer ? (
         <div className="flex-none border-t border-line bg-surface px-5 pt-3 pb-[max(env(safe-area-inset-bottom),16px)]">
