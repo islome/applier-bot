@@ -7,4 +7,10 @@ export const haptic = {
   select() {
     window.Telegram?.WebApp?.HapticFeedback?.selectionChanged();
   },
+  success() {
+    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success");
+  },
+  error() {
+    window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred("error");
+  },
 };

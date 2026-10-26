@@ -1,15 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PushScreen } from "@/components/app-shell";
 import { IconCheck } from "@/components/icons";
 import { Monogram } from "@/components/vacancy-card";
+import { STATUS_LABEL, type ApplicationSummary } from "@/lib/application-types";
+import { haptic } from "@/lib/haptics";
 import { TYPE_LABEL, formatSalaryShort, timeAgo } from "@/lib/vacancy-format";
 import type { VacancyRow } from "@/lib/vacancy-types";
 
 type State =
   | { kind: "loading" }
-  | { kind: "ready"; vacancy: VacancyRow }
+  | {
+      kind: "ready";
+      vacancy: VacancyRow;
+      hasProfile: boolean;
+      application: ApplicationSummary | null;
+    }
   | { kind: "notfound" }
   | { kind: "error"; message: string };
 
@@ -17,6 +25,8 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
   const [state, setState] = useState<State>({ kind: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
   const [now] = useState(() => Date.now());
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -26,7 +36,12 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
         if (res.status === 404) return { kind: "notfound" } as const;
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-        return { kind: "ready", vacancy: body.vacancy as VacancyRow } as const;
+        return {
+          kind: "ready",
+          vacancy: body.vacancy as VacancyRow,
+          hasProfile: Boolean(body.hasProfile),
+          application: (body.application ?? null) as ApplicationSummary | null,
+        } as const;
       })
       .then((next) => {
         if (!cancelled) setState(next);
@@ -48,6 +63,40 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
   function retry() {
     setState({ kind: "loading" });
     setReloadKey((k) => k + 1);
+  }
+
+  async function apply() {
+    if (applying || state.kind !== "ready") return;
+    setApplying(true);
+    setApplyError("");
+
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { Authorization: `tma ${initData}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ vacancy_id: id }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        code?: string;
+        application?: ApplicationSummary;
+      };
+
+      if (res.status === 409 && body.code === "NO_PROFILE") {
+        // profile was removed/never saved: flip the button to "Complete profile"
+        setState({ ...state, hasProfile: false });
+        throw new Error("Complete your profile first");
+      }
+      if (!res.ok || !body.application) throw new Error(body.error ?? `HTTP ${res.status}`);
+
+      haptic.success();
+      setState({ ...state, hasProfile: true, application: body.application });
+    } catch (e) {
+      haptic.error();
+      setApplyError(e instanceof Error ? e.message : "Could not send your application");
+    } finally {
+      setApplying(false);
+    }
   }
 
   if (state.kind === "loading") {
@@ -111,14 +160,34 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
     <PushScreen
       title="Vacancy"
       footer={
-        // Applying is the next step (needs the applications table). Disabled until then.
-        <button
-          type="button"
-          disabled
-          className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white opacity-50"
-        >
-          Apply (coming soon)
-        </button>
+        <div className="space-y-2">
+          {applyError ? <p className="text-center text-sm text-red-500">{applyError}</p> : null}
+          {state.application ? (
+            <Link
+              href="/applications"
+              className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-chip text-base font-bold text-chip-ink"
+            >
+              <IconCheck className="h-5 w-5" />
+              Applied · {STATUS_LABEL[state.application.status]}
+            </Link>
+          ) : !state.hasProfile ? (
+            <Link
+              href="/profile/edit"
+              className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white"
+            >
+              Complete profile to apply
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={apply}
+              disabled={applying}
+              className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white disabled:opacity-60"
+            >
+              {applying ? "Sending..." : "Apply now"}
+            </button>
+          )}
+        </div>
       }
     >
       <div className="space-y-5">
