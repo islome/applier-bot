@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TabScreen } from "@/components/app-shell";
 import { FilterSheet, type FilterOption } from "@/components/filter-sheet";
 import { IconFilter, IconSearch } from "@/components/icons";
@@ -17,6 +17,7 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
   const [query, setQuery] = useState("");
   const [major, setMajor] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   // Fixed once per mount, so "2h ago" labels are stable between renders
   const [now] = useState(() => Date.now());
 
@@ -89,18 +90,29 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
 
   const toolbar = (
     <div className="flex items-center gap-2">
-      <label className="glass flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full px-4 text-muted focus-within:ring-2 focus-within:ring-accent/30">
-        <IconSearch className="h-5 w-5 flex-none" />
+      <div className="glass flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full px-4 text-muted focus-within:ring-2 focus-within:ring-accent/30">
         <input
+          ref={searchInputRef}
           type="search"
           aria-label="Search vacancies"
           placeholder="Search vacancies"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
           enterKeyHint="search"
           className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
         />
-      </label>
+        <button
+          type="button"
+          aria-label="Finish search"
+          onClick={() => searchInputRef.current?.blur()}
+          className="flex h-9 w-9 flex-none items-center justify-center rounded-full text-muted"
+        >
+          <IconSearch className="h-5 w-5" />
+        </button>
+      </div>
 
       {showFilter ? (
         <button
@@ -128,6 +140,7 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
         title="Vacancies"
         subtitle={subtitle}
         toolbar={toolbar}
+        scrollHeader
         action={<Avatar user={user} />}
       >
         {error ? (
