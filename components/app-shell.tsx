@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback } from "react";
 import { haptic } from "@/lib/haptics";
 import { useTelegramBackButton } from "@/lib/use-telegram-back-button";
 import { IconBriefcase, IconFile, IconUser } from "@/components/icons";
@@ -16,40 +16,6 @@ const TABS = [
   { href: "/applications", label: "Applications", Icon: IconFile },
   { href: "/profile", label: "Profile", Icon: IconUser },
 ] as const;
-
-function useAutoHideHeader() {
-  const [isHidden, setIsHidden] = useState(false);
-  const lastScrollTop = useRef(0);
-  const lastDirection = useRef(0);
-  const directionDistance = useRef(0);
-
-  const onScroll = useCallback((event: React.UIEvent<HTMLElement>) => {
-    const scrollTop = event.currentTarget.scrollTop;
-    const delta = scrollTop - lastScrollTop.current;
-
-    if (scrollTop <= 0) {
-      setIsHidden(false);
-      directionDistance.current = 0;
-      lastDirection.current = 0;
-    } else if (delta !== 0) {
-      const direction = Math.sign(delta);
-      directionDistance.current =
-        direction === lastDirection.current
-          ? directionDistance.current + Math.abs(delta)
-          : Math.abs(delta);
-      lastDirection.current = direction;
-
-      if (directionDistance.current >= 10) {
-        setIsHidden(direction > 0);
-        directionDistance.current = 0;
-      }
-    }
-
-    lastScrollTop.current = scrollTop;
-  }, []);
-
-  return { isHidden, onScroll };
-}
 
 function TabBar() {
   const pathname = usePathname();
@@ -99,17 +65,9 @@ export function TabScreen({
   toolbar?: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const { isHidden, onScroll } = useAutoHideHeader();
-
   return (
     <div className="flex h-dvh flex-col bg-app text-ink">
-      <header
-        className={`flex flex-none items-start justify-between gap-3 overflow-hidden px-5 pt-4 pb-3 transition-[max-height,opacity,transform] duration-200 focus-within:max-h-32 focus-within:translate-y-0 focus-within:opacity-100 ${
-          isHidden
-            ? "max-h-0 -translate-y-full opacity-0"
-            : "max-h-32 translate-y-0 opacity-100"
-        }`}
-      >
+      <header className="flex flex-none items-start justify-between gap-3 px-5 pt-4 pb-3">
         <div className="min-w-0">
           <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">{title}</h1>
           {subtitle ? <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p> : null}
@@ -117,10 +75,7 @@ export function TabScreen({
         {action}
       </header>
 
-      <main
-        onScroll={onScroll}
-        className="flex-1 overflow-y-auto overscroll-contain pb-4"
-      >
+      <main className="flex-1 overflow-y-auto overscroll-contain pb-4">
         {toolbar ? (
           // Transparent on purpose: the glass controls blur the cards passing underneath
           <div className="sticky top-0 z-10 px-5 pt-1 pb-3">{toolbar}</div>
@@ -133,9 +88,6 @@ export function TabScreen({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Pushed screen: back button + page name, pinned bottom action        */
-/* ------------------------------------------------------------------ */
 
 export function PushScreen({
   title,
@@ -154,7 +106,6 @@ export function PushScreen({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isHidden, onScroll } = useAutoHideHeader();
 
   const goBack = useCallback(() => {
     haptic.light();
@@ -162,31 +113,18 @@ export function PushScreen({
     else router.replace(fallbackHref);
   }, [router, fallbackHref]);
 
-  // Telegram's native BackButton (top-left, in Telegram's own header)
   useTelegramBackButton(goBack);
 
   return (
     <div className="flex h-dvh flex-col bg-app text-ink">
-      {/* No in-app back button: Telegram already shows its own BackButton in its top bar */}
-      <header
-        className={`relative flex h-14 flex-none items-center justify-center overflow-hidden px-14 transition-[max-height,opacity,transform] duration-200 focus-within:max-h-14 focus-within:translate-y-0 focus-within:opacity-100 ${
-          isHidden
-            ? "max-h-0 -translate-y-full opacity-0"
-            : "max-h-14 translate-y-0 opacity-100"
-        }`}
-      >
+      <header className="relative flex h-14 flex-none items-center justify-center px-14">
         <h1 className="min-w-0 truncate text-[17px] leading-6 font-bold">{title}</h1>
         {action ? (
           <div className="absolute right-3 flex h-11 w-11 items-center justify-center">{action}</div>
         ) : null}
       </header>
 
-      <main
-        onScroll={onScroll}
-        className="flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-6"
-      >
-        {children}
-      </main>
+      <main className="flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-6">{children}</main>
 
       {footer ? (
         <div className="flex-none border-t border-line bg-surface px-5 pt-3 pb-[max(env(safe-area-inset-bottom),16px)]">
