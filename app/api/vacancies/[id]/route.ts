@@ -1,15 +1,24 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { authFromRequest } from "@/lib/telegram-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 const COLUMNS =
   "id, title, company, city, major, employment_type, salary_min, salary_max, salary_currency, description, requirements, created_at";
 
-/** GET /api/vacancies -> all active vacancies, newest first (Telegram users only) */
-export async function GET(req: Request) {
+/** GET /api/vacancies/:id -> one active vacancy (Telegram users only) */
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const auth = authFromRequest(req);
   if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  if (!z.uuid().safeParse(id).success) {
+    return NextResponse.json({ error: "Vacancy not found" }, { status: 404 });
   }
 
   let db;
@@ -23,17 +32,21 @@ export async function GET(req: Request) {
   const { data, error } = await db
     .from("vacancies")
     .select(COLUMNS)
+    .eq("id", id)
     .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .maybeSingle();
 
   if (error) {
-    console.error("vacancies GET failed:", error.message, error.code);
-    // Only the Postgres error code goes to the client (e.g. 42P01 = table missing), never the message
+    console.error("vacancy GET failed:", error.message, error.code);
     return NextResponse.json(
       { error: `Database error (${error.code ?? "unknown"})` },
       { status: 500 },
     );
   }
 
-  return NextResponse.json({ vacancies: data ?? [] });
+  if (!data) {
+    return NextResponse.json({ error: "Vacancy not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ vacancy: data });
 }

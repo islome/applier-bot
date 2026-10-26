@@ -1,26 +1,58 @@
 @import "tailwindcss";
 
+/* ---------- Design tokens (from the Figma-style canvas) ----------
+   Light is the designed theme. Dark values are derived from it and follow the
+   system / Telegram colour scheme. Components only use the semantic names
+   below (bg-app, bg-surface, text-ink, text-muted, border-line, ...). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --ink: #0f1115;
+  --muted: #5b6270;
+  --line: #e4e6eb;
+  --chip: #f0f2f5;
+  --chip-ink: #3f4654;
+  --accent: #2563eb; /* buttons, fills (white text on it: 5.2:1) */
+  --accent-text: #2563eb; /* accent used as text/icon colour */
+  --money: #047857;
+  --field-border: #858d9b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0b0b0d;
+    --surface: #17181c;
+    --ink: #f2f3f5;
+    --muted: #a0a7b4;
+    --line: #26282e;
+    --chip: #22242a;
+    --chip-ink: #c9ced8;
+    --accent: #2563eb;
+    --accent-text: #6b9bff;
+    --money: #34d399;
+    --field-border: #6b7280;
   }
 }
 
+@theme inline {
+  --color-app: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-chip: var(--chip);
+  --color-chip-ink: var(--chip-ink);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-money: var(--money);
+  --color-field: var(--field-border);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family:
+    Manrope, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
