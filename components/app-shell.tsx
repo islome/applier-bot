@@ -55,7 +55,6 @@ export function TabScreen({
   subtitle,
   action,
   toolbar,
-  scrollHeader = false,
   children,
 }: {
   title: string;
@@ -64,26 +63,19 @@ export function TabScreen({
   action?: React.ReactNode;
   /** Sticks under the header while the list scrolls beneath it (search + filter) */
   toolbar?: React.ReactNode;
-  /** Places the title in the scroll area so it scrolls out of view naturally */
-  scrollHeader?: boolean;
   children: React.ReactNode;
 }) {
-  const heading = (
-    <header className="flex flex-none items-start justify-between gap-3 px-5 pt-4 pb-3">
-      <div className="min-w-0">
-        <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">{title}</h1>
-        {subtitle ? <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p> : null}
-      </div>
-      {action}
-    </header>
-  );
-
   return (
     <div className="flex h-dvh flex-col bg-app text-ink">
-      {!scrollHeader ? heading : null}
+      <header className="flex flex-none items-start justify-between gap-3 px-5 pt-4 pb-3">
+        <div className="min-w-0">
+          <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">{title}</h1>
+          {subtitle ? <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p> : null}
+        </div>
+        {action}
+      </header>
 
       <main className="flex-1 overflow-y-auto overscroll-contain pb-4">
-        {scrollHeader ? heading : null}
         {toolbar ? (
           // Transparent on purpose: the glass controls blur the cards passing underneath
           <div className="sticky top-0 z-10 px-5 pt-1 pb-3">{toolbar}</div>
@@ -96,10 +88,14 @@ export function TabScreen({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Pushed screen: back button + page name, pinned bottom action        */
+/* ------------------------------------------------------------------ */
 
 export function PushScreen({
   title,
   fallbackHref = "/vacancies",
+  backEnabled = true,
   action,
   footer,
   children,
@@ -107,6 +103,8 @@ export function PushScreen({
   title: string;
   /** Where "back" goes if there is no history (screen opened directly) */
   fallbackHref?: string;
+  /** false = no Telegram BackButton (first-time onboarding has nowhere to go back to) */
+  backEnabled?: boolean;
   /** Optional single action on the right of the header */
   action?: React.ReactNode;
   /** Pinned primary action (Apply, Save) */
@@ -121,10 +119,11 @@ export function PushScreen({
     else router.replace(fallbackHref);
   }, [router, fallbackHref]);
 
-  useTelegramBackButton(goBack);
+  useTelegramBackButton(goBack, backEnabled);
 
   return (
     <div className="flex h-dvh flex-col bg-app text-ink">
+      {/* No in-app back button: Telegram already shows its own BackButton in its top bar */}
       <header className="relative flex h-14 flex-none items-center justify-center px-14">
         <h1 className="min-w-0 truncate text-[17px] leading-6 font-bold">{title}</h1>
         {action ? (
