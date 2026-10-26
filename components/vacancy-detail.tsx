@@ -26,6 +26,8 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
   const [reloadKey, setReloadKey] = useState(0);
   const [now] = useState(() => Date.now());
   const [applying, setApplying] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [applyError, setApplyError] = useState("");
 
   useEffect(() => {
@@ -100,6 +102,31 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
     }
   }
 
+  async function cancelApplication() {
+    if (cancelling || state.kind !== "ready" || !state.application) return;
+    setCancelling(true);
+    setApplyError("");
+
+    try {
+      const res = await fetch("/api/applications", {
+        method: "DELETE",
+        headers: { Authorization: `tma ${initData}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ application_id: state.application.id }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+
+      haptic.success();
+      setState({ ...state, application: null });
+      setConfirmCancel(false);
+    } catch (e) {
+      haptic.error();
+      setApplyError(e instanceof Error ? e.message : "Could not cancel your application");
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   if (state.kind === "loading") {
     return (
       <PushScreen title="Vacancy">
@@ -164,13 +191,48 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
         <div className="space-y-2">
           {applyError ? <p className="text-center text-sm text-red-500">{applyError}</p> : null}
           {state.application ? (
-            <Link
-              href="/applications"
-              className="flex h-[52px] w-full items-center justify-center gap-2 rounded-[14px] bg-chip text-base font-bold text-chip-ink"
-            >
-              <IconCheck className="h-5 w-5" />
-              Applied · {STATUS_LABEL[state.application.status]}
-            </Link>
+            confirmCancel ? (
+              <>
+                <p className="text-center text-sm text-muted">
+                  Permanently cancel this application?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={cancelling}
+                    onClick={() => setConfirmCancel(false)}
+                    className="h-[52px] flex-1 rounded-[14px] border border-line text-base font-bold disabled:opacity-60"
+                  >
+                    Keep application
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cancelling}
+                    onClick={cancelApplication}
+                    className="h-[52px] flex-1 rounded-[14px] bg-red-600 text-base font-bold text-white disabled:opacity-60"
+                  >
+                    {cancelling ? "Cancelling..." : "Confirm cancel"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex gap-2">
+                <div className="flex h-[52px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[14px] bg-chip text-center text-sm font-bold text-chip-ink">
+                  <IconCheck className="h-5 w-5 flex-none" />
+                  <span className="truncate">Applied · {STATUS_LABEL[state.application.status]}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setApplyError("");
+                    setConfirmCancel(true);
+                  }}
+                  className="h-[52px] flex-none rounded-[14px] border border-red-600/30 px-4 text-sm font-bold text-red-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            )
           ) : !state.hasProfile ? (
             <Link
               href="/profile/edit"

@@ -7,6 +7,7 @@ import type { ApplicationRow, ApplicationStatus } from "@/lib/application-types"
 type Db = ReturnType<typeof getSupabaseAdmin>;
 
 const bodySchema = z.object({ vacancy_id: z.uuid() });
+const deleteBodySchema = z.object({ application_id: z.uuid() });
 
 function dbError(label: string, error: { message: string; code?: string }) {
   console.error(`${label}:`, error.message, error.code);
@@ -141,4 +142,50 @@ export async function POST(req: Request) {
   }
 
   return dbError("applications POST failed", insertError);
+}
+
+/** DELETE /api/applications { application_id } -> permanently remove own application */
+export async function DELETE(req: Request) {
+  const auth = authFromRequest(req);
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = deleteBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid application" }, { status: 400 });
+  }
+
+  const db = getDb();
+  if (!db) return NextResponse.json({ error: "Server is not configured" }, { status: 500 });
+
+  const { data: candidate, error: candidateError } = await db
+    .from("candidates")
+    .select("id")
+    .eq("telegram_id", auth.user.id)
+    .maybeSingle();
+  if (candidateError) return dbError("candidate lookup failed", candidateError);
+  if (!candidate) {
+    return NextResponse.json({ error: "Application not found" }, { status: 404 });
+  }
+
+  const { data: deleted, error: deleteError } = await db
+    .from("applications")
+    .delete()
+    .eq("id", parsed.data.application_id)
+    .eq("candidate_id", candidate.id)
+    .select("id")
+    .maybeSingle();
+
+  if (deleteError) return dbError("applications DELETE failed", deleteError);
+  if (!deleted) {
+    return NextResponse.json({ error: "Application not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ deleted: true });
 }
