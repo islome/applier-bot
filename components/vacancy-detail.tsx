@@ -39,7 +39,8 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
         return {
           kind: "ready",
           vacancy: body.vacancy as VacancyRow,
-          hasProfile: Boolean(body.hasProfile),
+          // only an explicit false means "no profile"; missing/unknown lets the user try
+          hasProfile: body.hasProfile !== false,
           application: (body.application ?? null) as ApplicationSummary | null,
         } as const;
       })

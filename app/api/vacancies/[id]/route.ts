@@ -6,7 +6,11 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 const COLUMNS =
   "id, title, company, city, major, employment_type, salary_min, salary_max, salary_currency, description, requirements, created_at";
 
-/** GET /api/vacancies/:id -> one active vacancy (Telegram users only) */
+/**
+ * GET /api/vacancies/:id -> one active vacancy (Telegram users only), plus:
+ *   hasProfile:  true / false, or null if we could not tell (the client then lets them try)
+ *   application: this user's application for this vacancy, or null
+ */
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -48,5 +52,35 @@ export async function GET(
     return NextResponse.json({ error: "Vacancy not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ vacancy: data });
+  // The user's own state. Not critical: if these lookups fail (for example the
+  // applications table is not created yet) the vacancy page still opens.
+  let hasProfile: boolean | null = null;
+  let application: { id: string; status: string; created_at: string } | null = null;
+
+  const { data: candidate, error: candidateError } = await db
+    .from("candidates")
+    .select("id")
+    .eq("telegram_id", auth.user.id)
+    .maybeSingle();
+
+  if (candidateError) {
+    console.error("candidate lookup failed:", candidateError.message, candidateError.code);
+  } else if (!candidate) {
+    hasProfile = false;
+  } else {
+    hasProfile = true;
+    const { data: app, error: appError } = await db
+      .from("applications")
+      .select("id, status, created_at")
+      .eq("candidate_id", candidate.id)
+      .eq("vacancy_id", id)
+      .maybeSingle();
+    if (appError) {
+      console.error("application lookup failed:", appError.message, appError.code);
+    } else {
+      application = app;
+    }
+  }
+
+  return NextResponse.json({ vacancy: data, hasProfile, application });
 }
