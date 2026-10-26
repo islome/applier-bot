@@ -55,6 +55,7 @@ export function TabScreen({
   subtitle,
   action,
   toolbar,
+  scrollHeader = false,
   children,
 }: {
   title: string;
@@ -63,19 +64,28 @@ export function TabScreen({
   action?: React.ReactNode;
   /** Sticks under the header while the list scrolls beneath it (search + filter) */
   toolbar?: React.ReactNode;
+  /** true = the large title scrolls away with the content; only the toolbar stays pinned */
+  scrollHeader?: boolean;
   children: React.ReactNode;
 }) {
+  const header = (
+    <header
+      className={`flex items-start justify-between gap-3 px-5 pt-4 pb-3 ${scrollHeader ? "" : "flex-none"}`}
+    >
+      <div className="min-w-0">
+        <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">{title}</h1>
+        {subtitle ? <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p> : null}
+      </div>
+      {action}
+    </header>
+  );
+
   return (
     <div className="flex h-dvh flex-col bg-app text-ink">
-      <header className="flex flex-none items-start justify-between gap-3 px-5 pt-4 pb-3">
-        <div className="min-w-0">
-          <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">{title}</h1>
-          {subtitle ? <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p> : null}
-        </div>
-        {action}
-      </header>
+      {scrollHeader ? null : header}
 
       <main className="flex-1 overflow-y-auto overscroll-contain pb-4">
+        {scrollHeader ? header : null}
         {toolbar ? (
           // Transparent on purpose: the glass controls blur the cards passing underneath
           <div className="sticky top-0 z-10 px-5 pt-1 pb-3">{toolbar}</div>
@@ -119,6 +129,7 @@ export function PushScreen({
     else router.replace(fallbackHref);
   }, [router, fallbackHref]);
 
+  // Telegram's native BackButton (top-left, in Telegram's own header)
   useTelegramBackButton(goBack, backEnabled);
 
   return (
