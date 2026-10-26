@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { haptic } from "@/lib/haptics";
 import { useTelegramBackButton } from "@/lib/use-telegram-back-button";
-import { IconBriefcase, IconChevronLeft, IconFile, IconUser } from "@/components/icons";
+import { IconBriefcase, IconFile, IconUser } from "@/components/icons";
 
 /* ------------------------------------------------------------------ */
 /* Tab bar                                                             */
@@ -69,15 +69,21 @@ export function TabScreen({
     <div className="flex h-dvh flex-col bg-app text-ink">
       <header className="flex flex-none items-start justify-between gap-3 px-5 pt-4 pb-3">
         <div className="min-w-0">
-          <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">{title}</h1>
-          {subtitle ? <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p> : null}
+          <h1 className="text-[28px] leading-[34px] font-extrabold tracking-tight">
+            {title}
+          </h1>
+          {subtitle ? (
+            <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p>
+          ) : null}
         </div>
         {action}
       </header>
 
       {toolbar ? <div className="flex-none">{toolbar}</div> : null}
 
-      <main className="flex-1 overflow-y-auto overscroll-contain px-5 pb-4">{children}</main>
+      <main className="flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
+        {children}
+      </main>
 
       <TabBar />
     </div>
@@ -117,22 +123,20 @@ export function PushScreen({
 
   return (
     <div className="flex h-dvh flex-col bg-app text-ink">
-      <header className="flex h-14 flex-none items-center gap-2 px-3">
-        <button
-          type="button"
-          onClick={goBack}
-          aria-label="Back"
-          className="flex h-11 w-11 flex-none items-center justify-center rounded-full border border-line bg-surface active:bg-chip"
-        >
-          <IconChevronLeft />
-        </button>
-        <h1 className="min-w-0 flex-1 truncate text-center text-[17px] leading-6 font-bold">
+      <header className="relative flex h-14 flex-none items-center justify-center px-14">
+        <h1 className="min-w-0 truncate text-[17px] leading-6 font-bold">
           {title}
         </h1>
-        <div className="flex h-11 w-11 flex-none items-center justify-center">{action}</div>
+        {action ? (
+          <div className="absolute right-3 flex h-11 w-11 items-center justify-center">
+            {action}
+          </div>
+        ) : null}
       </header>
 
-      <main className="flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-6">{children}</main>
+      <main className="flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-6">
+        {children}
+      </main>
 
       {footer ? (
         <div className="flex-none border-t border-line bg-surface px-5 pt-3 pb-[max(env(safe-area-inset-bottom),16px)]">
