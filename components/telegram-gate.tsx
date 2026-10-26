@@ -30,7 +30,7 @@ export function TelegramGate({
         <div className="w-full max-w-sm rounded-3xl border border-black/10 bg-white p-6 text-center dark:border-white/10 dark:bg-zinc-900">
           <h1 className="text-2xl font-semibold tracking-tight">Open inside Telegram</h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            Open the bot and tap the menu button to continue.
+            Open the bot and tap the App button to continue.
           </p>
         </div>
       </main>
