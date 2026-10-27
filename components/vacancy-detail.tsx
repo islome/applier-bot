@@ -10,6 +10,7 @@ import { haptic } from "@/lib/haptics";
 import { employmentLabel, formatSalaryShort, timeAgo } from "@/lib/vacancy-format";
 import type { VacancyRow } from "@/lib/vacancy-types";
 import { useLanguage } from "@/components/language-provider";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 type State =
   | { kind: "loading" }
@@ -136,20 +137,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
   if (state.kind === "loading") {
     return (
       <PushScreen title={t("vacancy.title")}>
-        <div role="status" aria-label={t("common.loading")} className="animate-pulse space-y-5">
-          <div className="space-y-3">
-            <div className="h-14 w-14 rounded-2xl bg-chip" />
-            <div className="h-7 w-4/5 rounded bg-chip" />
-            <div className="h-4 w-1/2 rounded bg-chip" />
-          </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="h-16.5 rounded-[14px] bg-chip" />
-            <div className="h-16.5 rounded-[14px] bg-chip" />
-            <div className="h-16.5 rounded-[14px] bg-chip" />
-            <div className="h-16.5 rounded-[14px] bg-chip" />
-          </div>
-          <div className="h-24 rounded bg-chip" />
-        </div>
+        <LoadingAnimation label={t("common.loading")} />
       </PushScreen>
     );
   }

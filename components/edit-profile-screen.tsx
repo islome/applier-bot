@@ -17,6 +17,7 @@ import {
 import { MAJORS } from "@/lib/constants";
 import { haptic } from "@/lib/haptics";
 import { translateFormError, useLanguage } from "@/components/language-provider";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 import type { TelegramUser } from "@/types/telegram";
 
 type FormState = {
@@ -215,11 +216,7 @@ export function EditProfileScreen({
   if (!loaded) {
     return (
       <PushScreen title={title} fallbackHref="/profile" backEnabled={!welcome}>
-        <div role="status" aria-label={t("common.loading")} className="animate-pulse space-y-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-[72px] rounded-xl bg-chip" />
-          ))}
-        </div>
+        <LoadingAnimation label={t("common.loading")} />
       </PushScreen>
     );
   }

@@ -12,6 +12,7 @@ import type { ApplicationRow } from "@/lib/application-types";
 import { haptic } from "@/lib/haptics";
 import { timeAgo } from "@/lib/vacancy-format";
 import { useLanguage } from "@/components/language-provider";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 export function ApplicationsScreen({ initData }: { initData: string }) {
   const { language, t } = useLanguage();
@@ -95,18 +96,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
       {error ? (
         <ErrorState message={t("common.applicationsLoadError")} onRetry={retry} />
       ) : !items ? (
-        <div role="status" aria-label={t("applications.loading")} className="flex animate-pulse flex-col gap-3">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4">
-              <div className="h-11 w-11 flex-none rounded-xl bg-chip" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-2/3 rounded bg-chip" />
-                <div className="h-3 w-1/2 rounded bg-chip" />
-                <div className="h-6 w-20 rounded-full bg-chip" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <LoadingAnimation label={t("applications.loading")} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<IconFile className="h-7 w-7" />}

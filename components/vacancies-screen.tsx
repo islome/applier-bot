@@ -5,9 +5,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TabScreen } from "@/components/app-shell";
 import { FilterSheet, type FilterOption } from "@/components/filter-sheet";
 import { IconFilter, IconSearch } from "@/components/icons";
-import { VacancyCard, VacancyCardSkeleton } from "@/components/vacancy-card";
+import { VacancyCard } from "@/components/vacancy-card";
 import { haptic } from "@/lib/haptics";
 import { useLanguage } from "@/components/language-provider";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 import type { VacancyRow } from "@/lib/vacancy-types";
 import type { TelegramUser } from "@/types/telegram";
 
@@ -162,15 +163,7 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
             </button>
           </div>
         ) : !vacancies ? (
-          <div
-            role="status"
-            aria-label={t("vacancies.loading")}
-            className="flex animate-pulse flex-col gap-3"
-          >
-            <VacancyCardSkeleton />
-            <VacancyCardSkeleton />
-            <VacancyCardSkeleton />
-          </div>
+          <LoadingAnimation label={t("vacancies.loading")} />
         ) : total === 0 ? (
           <EmptyState
             title={t("vacancies.noVacancies")}

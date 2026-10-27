@@ -2,12 +2,14 @@
 
 import { useTelegram } from "@/lib/use-telegram";
 import { useLanguage } from "@/components/language-provider";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 import type { TelegramUser } from "@/types/telegram";
 
 export function Spinner() {
+  const { t } = useLanguage();
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent opacity-40" />
+      <LoadingAnimation label={t("common.loading")} className="py-0" />
     </main>
   );
 }

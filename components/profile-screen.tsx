@@ -9,6 +9,7 @@ import type { CandidateRow } from "@/lib/candidate-schema";
 import { formatPhone, experienceLabel } from "@/lib/profile-format";
 import type { TelegramUser } from "@/types/telegram";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 export function ProfileScreen({ user, initData }: { user: TelegramUser; initData: string }) {
   const router = useRouter();
@@ -60,10 +61,7 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
       {error ? (
         <ErrorState message={t("common.profileLoadError")} onRetry={retry} />
       ) : !candidate ? (
-        <div role="status" aria-label={t("common.loading")} className="animate-pulse space-y-4">
-          <div className="h-24 rounded-2xl bg-chip" />
-          <div className="h-52 rounded-2xl bg-chip" />
-        </div>
+        <LoadingAnimation label={t("common.loading")} />
       ) : (
         <div className="flex flex-col gap-4">
           <section className="flex items-center gap-4 rounded-2xl border border-line bg-surface p-4">
