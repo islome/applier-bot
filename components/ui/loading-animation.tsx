@@ -14,7 +14,7 @@ export function LoadingAnimation({
 }) {
   return (
     <div role="status" aria-label={label} className={`flex justify-center ${className}`}>
-      <LottieAnimation src={loadingAnimationSrc} className="h-28 w-28 object-contain" />
+      <LottieAnimation src={loadingAnimationSrc} className="h-40 w-40 object-contain" />
     </div>
   );
 }
