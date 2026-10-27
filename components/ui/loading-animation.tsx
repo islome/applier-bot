@@ -3,7 +3,7 @@
 import { LottieAnimation } from "@/components/ui/lottie-animation";
 
 const loadingAnimationSrc =
-  "https://lottie.host/612ef44d-72be-4b7a-855a-481dc6914558/EPQgW8Vi7o.lottie";
+  "/ui/loading.json";
 
 export function LoadingAnimation({
   label,
