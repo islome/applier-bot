@@ -11,6 +11,10 @@ import { employmentLabel, formatSalaryShort, timeAgo } from "@/lib/vacancy-forma
 import type { VacancyRow } from "@/lib/vacancy-types";
 import { useLanguage } from "@/components/language-provider";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
+import {
+  LottieAnimation,
+  notFoundAnimationSrc,
+} from "@/components/ui/lottie-animation";
 
 type State =
   | { kind: "loading" }
@@ -147,6 +151,9 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
     return (
       <PushScreen title={t("vacancy.title")}>
         <div className="flex flex-col items-center px-6 py-16 text-center">
+          {notFound ? (
+            <LottieAnimation src={notFoundAnimationSrc} className="h-40 w-40 object-contain" />
+          ) : null}
           <h2 className="text-lg font-bold">
             {notFound ? t("vacancy.notFound") : t("vacancy.loadError")}
           </h2>

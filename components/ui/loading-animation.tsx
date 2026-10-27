@@ -1,5 +1,10 @@
 "use client";
 
+import { LottieAnimation } from "@/components/ui/lottie-animation";
+
+const loadingAnimationSrc =
+  "https://lottie.host/c186bae5-8fd4-4265-8588-3079796d87c6/dk56jMGKZj.lottie";
+
 export function LoadingAnimation({
   label,
   className = "py-10",
@@ -9,15 +14,7 @@ export function LoadingAnimation({
 }) {
   return (
     <div role="status" aria-label={label} className={`flex justify-center ${className}`}>
-      <video
-        src="/ui/loading.webm"
-        autoPlay
-        loop
-        muted
-        playsInline
-        aria-hidden="true"
-        className="h-28 w-28 object-contain"
-      />
+      <LottieAnimation src={loadingAnimationSrc} className="h-28 w-28 object-contain" />
     </div>
   );
 }

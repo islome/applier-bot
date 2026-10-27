@@ -2,20 +2,17 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/components/language-provider";
+import {
+  LottieAnimation,
+  notFoundAnimationSrc,
+} from "@/components/ui/lottie-animation";
 
 export function NotFoundScreen() {
   const { t } = useLanguage();
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
-      <video
-        src="/ui/error-404.webm"
-        autoPlay
-        muted
-        playsInline
-        aria-hidden="true"
-        className="h-56 w-56 object-contain"
-      />
+      <LottieAnimation src={notFoundAnimationSrc} className="h-56 w-56 object-contain" />
       <h1 className="mt-4 text-2xl font-extrabold tracking-tight">{t("notFound.title")}</h1>
       <p className="mt-2 max-w-sm text-sm text-muted">{t("notFound.description")}</p>
       <Link
