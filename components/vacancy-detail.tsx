@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PushScreen } from "@/components/app-shell";
 import { IconCheck } from "@/components/icons";
+import { StatusChip } from "@/components/status-chip";
 import { Monogram } from "@/components/vacancy-card";
 import type { ApplicationSummary } from "@/lib/application-types";
 import { haptic } from "@/lib/haptics";
@@ -228,9 +229,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
               <div className="flex gap-2">
                 <div className="flex h-13 min-w-0 flex-1 items-center justify-center gap-2 rounded-[14px] bg-chip text-center text-sm font-bold text-chip-ink">
                   <IconCheck className="h-5 w-5 flex-none" />
-                  <span className="truncate">
-                    {t("vacancy.applied")} · {t(`status.${state.application.status}` as "status.new" | "status.reviewed" | "status.shortlisted" | "status.rejected")}
-                  </span>
+                  <StatusChip status={state.application.status} />
                 </div>
                 <button
                   type="button"
