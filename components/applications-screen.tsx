@@ -133,10 +133,10 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                       {a.vacancy.company} · {a.vacancy.city}
                     </p>
                     <div className="mt-2 flex items-center gap-2">
-                      <StatusChip status={a.status} />
                       <span className="text-xs text-muted">{timeAgo(a.created_at, now, language, t)}</span>
                     </div>
                   </div>
+                  <StatusChip status={a.status} />
                   <IconChevronRight className="h-5 w-5 flex-none text-muted" />
                 </Link>
                 {confirmingId === a.id ? (
