@@ -11,6 +11,7 @@ import { useLanguage } from "@/components/language-provider";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import type { VacancyRow } from "@/lib/vacancy-types";
 import type { TelegramUser } from "@/types/telegram";
+import EmptyBoxAnimation from "@/app/EmptyBoxAnimation";
 
 export function VacanciesScreen({ user, initData }: { user: TelegramUser; initData: string }) {
   const { t, majorLabel } = useLanguage();
@@ -166,11 +167,13 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
           <LoadingAnimation label={t("vacancies.loading")} />
         ) : total === 0 ? (
           <EmptyState
+            icon={<EmptyBoxAnimation />}
             title={t("vacancies.noVacancies")}
             text={t("vacancies.checkBack")}
           />
         ) : filtered.length === 0 ? (
           <EmptyState
+            icon={<EmptyBoxAnimation />}
             title={t("vacancies.nothingFound")}
             text={t("vacancies.changeSearch")}
             action={
@@ -232,16 +235,19 @@ function Avatar({ user }: { user: TelegramUser }) {
 }
 
 function EmptyState({
+  icon,
   title,
   text,
   action,
 }: {
+  icon?: React.ReactNode;
   title: string;
   text: string;
   action?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col items-center px-6 py-16 text-center">
+      {icon}
       <h2 className="text-lg font-bold">{title}</h2>
       <p className="mt-1 max-w-xs text-sm text-muted">{text}</p>
       {action}
