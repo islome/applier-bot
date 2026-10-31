@@ -8,7 +8,7 @@ import { IconFile } from "@/components/icons";
 import { IconChevronRight } from "@/components/icons-more";
 import { StatusChip } from "@/components/status-chip";
 import { Monogram } from "@/components/vacancy-card";
-import type { ApplicationRow } from "@/lib/application-types";
+import { PROGRESS_STEPS, type ApplicationRow } from "@/lib/application-types";
 import { haptic } from "@/lib/haptics";
 import { timeAgo } from "@/lib/vacancy-format";
 import { useLanguage } from "@/components/language-provider";
@@ -119,64 +119,81 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
             </p>
           )}
           <ul className="flex flex-col gap-3">
-            {items.map((a) => (
-              <li key={a.id} className="overflow-hidden rounded-2xl border border-line bg-surface">
-                <Link
-                  href={`/vacancies/${a.vacancy.id}`}
-                  onClick={() => haptic.light()}
-                  className="flex items-center gap-3 p-4 transition-colors active:bg-chip"
-                >
-                  <Monogram name={a.vacancy.company} />
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-base leading-5.5 font-bold">{a.vacancy.title}</h2>
-                    <p className="mt-0.5 text-[13px] leading-4.5 text-muted">
-                      {a.vacancy.company} · {a.vacancy.city}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
+            {items.map((a) => {
+              const step = PROGRESS_STEPS.indexOf(a.status);
+              const canCancel = a.status === "new";
+              return (
+                <li key={a.id} className="overflow-hidden rounded-2xl border border-line bg-surface">
+                  <Link
+                    href={`/vacancies/${a.vacancy.id}`}
+                    onClick={() => haptic.light()}
+                    className="block p-4 transition-colors active:bg-chip"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Monogram name={a.vacancy.company} />
+                      <div className="min-w-0 flex-1">
+                        <h2 className="truncate text-base leading-5.5 font-bold">{a.vacancy.title}</h2>
+                        <p className="mt-0.5 truncate text-[13px] leading-4.5 text-muted">
+                          {a.vacancy.company} · {a.vacancy.city}
+                        </p>
+                      </div>
+                      <IconChevronRight className="mt-1 h-5 w-5 flex-none text-muted" />
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <StatusChip status={a.status} />
                       <span className="text-xs text-muted">{timeAgo(a.created_at, now, language, t)}</span>
                     </div>
-                  </div>
-                  <StatusChip status={a.status} />
-                  <IconChevronRight className="h-5 w-5 flex-none text-muted" />
-                </Link>
-                {confirmingId === a.id ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
-                    <p className="text-sm text-muted">{t("applications.removeConfirm")}</p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        disabled={deletingId === a.id}
-                        onClick={() => setConfirmingId(null)}
-                        className="min-h-10 rounded-xl border border-line px-3 text-sm font-semibold disabled:opacity-60"
-                      >
-                        {t("applications.keep")}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={deletingId === a.id}
-                        onClick={() => deleteApplication(a.id)}
-                        className="min-h-10 rounded-xl bg-red-600 px-3 text-sm font-semibold text-white disabled:opacity-60"
-                      >
-                        {deletingId === a.id ? t("applications.removing") : t("applications.remove")}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border-t border-line px-4 py-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActionError("");
-                        setConfirmingId(a.id);
-                      }}
-                      className="min-h-10 text-sm font-semibold text-red-600"
-                    >
-                      {t("applications.cancel")}
-                    </button>
-                  </div>
-                )}
-              </li>
-            ))}
+                    {step >= 0 && (
+                      <div className="mt-3 flex gap-1.5" aria-hidden="true">
+                        {PROGRESS_STEPS.map((s, i) => (
+                          <span
+                            key={s}
+                            className={`h-1 flex-1 rounded-full ${i <= step ? "bg-accent" : "bg-chip"}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </Link>
+                  {canCancel &&
+                    (confirmingId === a.id ? (
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
+                        <p className="text-sm text-muted">{t("applications.removeConfirm")}</p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={deletingId === a.id}
+                            onClick={() => setConfirmingId(null)}
+                            className="min-h-10 rounded-xl border border-line px-3 text-sm font-semibold disabled:opacity-60"
+                          >
+                            {t("applications.keep")}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deletingId === a.id}
+                            onClick={() => deleteApplication(a.id)}
+                            className="min-h-10 rounded-xl bg-red-600 px-3 text-sm font-semibold text-white disabled:opacity-60"
+                          >
+                            {deletingId === a.id ? t("applications.removing") : t("applications.remove")}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border-t border-line px-4 py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActionError("");
+                            setConfirmingId(a.id);
+                          }}
+                          className="min-h-10 text-sm font-semibold text-red-600"
+                        >
+                          {t("applications.cancel")}
+                        </button>
+                      </div>
+                    ))}
+                </li>
+              );
+            })}
           </ul>
         </>
       )}

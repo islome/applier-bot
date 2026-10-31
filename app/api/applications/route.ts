@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authFromRequest } from "@/lib/telegram-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import type { ApplicationRow, ApplicationStatus } from "@/lib/application-types";
+import { normalizeStatus, type ApplicationRow } from "@/lib/application-types";
 
 type Db = ReturnType<typeof getSupabaseAdmin>;
 
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
   type Vacancy = ApplicationRow["vacancy"];
   type Raw = {
     id: string;
-    status: ApplicationStatus;
+    status: string;
     created_at: string;
     vacancies: Vacancy | Vacancy[] | null;
   };
@@ -64,7 +64,12 @@ export async function GET(req: Request) {
   for (const row of (data ?? []) as unknown as Raw[]) {
     const vacancy = Array.isArray(row.vacancies) ? row.vacancies[0] : row.vacancies;
     if (!vacancy) continue;
-    applications.push({ id: row.id, status: row.status, created_at: row.created_at, vacancy });
+    applications.push({
+      id: row.id,
+      status: normalizeStatus(row.status),
+      created_at: row.created_at,
+      vacancy,
+    });
   }
 
   return NextResponse.json({ applications });
@@ -174,16 +179,30 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Application not found" }, { status: 404 });
   }
 
+  // Faqat "new" holatdagi arizani nomzod o'zi o'chira oladi; keyingi bosqichlar HR nazoratida
   const { data: deleted, error: deleteError } = await db
     .from("applications")
     .delete()
     .eq("id", parsed.data.application_id)
     .eq("candidate_id", candidate.id)
+    .eq("status", "new")
     .select("id")
     .maybeSingle();
 
   if (deleteError) return dbError("applications DELETE failed", deleteError);
   if (!deleted) {
+    const { data: existing } = await db
+      .from("applications")
+      .select("id")
+      .eq("id", parsed.data.application_id)
+      .eq("candidate_id", candidate.id)
+      .maybeSingle();
+    if (existing) {
+      return NextResponse.json(
+        { error: "Only new applications can be cancelled", code: "NOT_CANCELLABLE" },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ error: "Application not found" }, { status: 404 });
   }
 
