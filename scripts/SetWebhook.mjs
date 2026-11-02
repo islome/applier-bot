@@ -27,3 +27,18 @@ const res = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
 const data = await res.json();
 console.log(data);
 if (!data.ok) process.exit(1);
+
+// Buyruqlar menyusi (chatdagi "/" ro'yxati). /start va /vacancies webhook'da ishlanadi, bu faqat menyuda ko'rsatadi.
+const cmdRes = await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    commands: [
+      { command: "start", description: "Boshlash" },
+      { command: "vacancies", description: "Yo'nalishim bo'yicha vakansiyalar" },
+    ],
+  }),
+});
+const cmdData = await cmdRes.json();
+console.log(cmdData);
+if (!cmdData.ok) process.exit(1);
