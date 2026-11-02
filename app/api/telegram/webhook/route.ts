@@ -3,7 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 
 const DEFAULT_APP_URL = "https://applier-bot.vercel.app/";
 // Rasm public/start.jpg ga qo'yiladi. Topilmasa — oddiy matn yuboriladi.
-const START_IMAGE_PATH = "start.jpg";
+const START_IMAGE_PATH = "/public/start.jpg";
 
 const WELCOME_TEXT = [
   "Job Applier ga xush kelibsiz!",
