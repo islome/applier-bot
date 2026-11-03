@@ -265,12 +265,14 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
       }
     >
       <div className="space-y-5">
-        <section>
+        <section className="flex items-center gap-3.5">
           <Monogram name={v.company} logoUrl={v.logo_url} size="lg" />
-          <h2 className="mt-3.5 text-2xl leading-7.5 font-extrabold tracking-tight">{v.title}</h2>
-          <p className="mt-1 text-[15px] leading-5.5 text-muted">
-            {v.company} · {t("vacancy.posted")} {timeAgo(v.created_at, now, language, t)}
-          </p>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl leading-6 font-extrabold tracking-tight">{v.title}</h2>
+            <p className="mt-0.5 text-[14px] leading-5 text-muted">
+              {v.company} · {t("vacancy.posted")} {timeAgo(v.created_at, now, language, t)}
+            </p>
+          </div>
         </section>
 
         <section className="grid grid-cols-2 gap-2.5">
