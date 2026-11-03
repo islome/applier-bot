@@ -266,7 +266,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
     >
       <div className="space-y-5">
         <section>
-          <Monogram name={v.company} size="lg" />
+          <Monogram name={v.company} logoUrl={v.logo_url} size="lg" />
           <h2 className="mt-3.5 text-2xl leading-7.5 font-extrabold tracking-tight">{v.title}</h2>
           <p className="mt-1 text-[15px] leading-5.5 text-muted">
             {v.company} · {t("vacancy.posted")} {timeAgo(v.created_at, now, language, t)}

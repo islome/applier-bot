@@ -1,14 +1,40 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { haptic } from "@/lib/haptics";
 import { employmentLabel, formatSalary, timeAgo } from "@/lib/vacancy-format";
 import type { VacancyRow } from "@/lib/vacancy-types";
 import { useLanguage } from "@/components/language-provider";
 
-/** Company initial in a soft square. Used on cards and the detail page. */
-export function Monogram({ name, size = "md" }: { name: string; size?: "md" | "lg" }) {
+/** Company logo (logoUrl) in a soft square; falls back to the company initial if missing or broken. */
+export function Monogram({
+  name,
+  logoUrl,
+  size = "md",
+}: {
+  name: string;
+  logoUrl?: string | null;
+  size?: "md" | "lg";
+}) {
+  const [failed, setFailed] = useState(false);
   const box = size === "lg" ? "h-14 w-14 rounded-2xl text-[22px]" : "h-11 w-11 rounded-xl text-lg";
+
+  if (logoUrl && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- logo hosti HR tomonidan kiritiladi (noma'lum domen)
+      <img
+        src={logoUrl}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
+        className={`flex-none bg-chip object-cover ${box}`}
+      />
+    );
+  }
+
   return (
     <div
       aria-hidden="true"
@@ -37,7 +63,7 @@ export function VacancyCard({ vacancy: v, now }: { vacancy: VacancyRow; now: num
       className="block rounded-2xl border border-line bg-surface p-4 transition-colors active:bg-chip"
     >
       <div className="flex items-start gap-3">
-        <Monogram name={v.company} />
+        <Monogram name={v.company} logoUrl={v.logo_url} />
         <div className="min-w-0 flex-1">
           <h2 className="text-base leading-5.5 font-bold">{v.title}</h2>
           <p className="mt-0.5 text-[13px] leading-4.5 text-muted">

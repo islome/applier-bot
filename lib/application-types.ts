@@ -26,5 +26,5 @@ export type ApplicationSummary = {
 };
 
 export type ApplicationRow = ApplicationSummary & {
-  vacancy: { id: string; title: string; company: string; city: string };
+  vacancy: { id: string; title: string; company: string; city: string; logo_url?: string | null };
 };

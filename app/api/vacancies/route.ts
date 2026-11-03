@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authFromRequest } from "@/lib/telegram-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { loadLogoMap, logoFor } from "@/lib/company-logos";
 
 const COLUMNS =
   "id, title, company, city, major, employment_type, salary_min, salary_max, salary_currency, description, requirements, created_at";
@@ -33,5 +34,8 @@ export async function GET(req: Request) {
     );
   }
 
-  return NextResponse.json({ vacancies: data ?? [] });
+  const logos = await loadLogoMap(db);
+  const vacancies = (data ?? []).map((v) => ({ ...v, logo_url: logoFor(logos, v.company) }));
+
+  return NextResponse.json({ vacancies });
 }

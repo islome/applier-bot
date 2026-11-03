@@ -130,7 +130,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                     className="block p-4 transition-colors active:bg-chip"
                   >
                     <div className="flex items-start gap-3">
-                      <Monogram name={a.vacancy.company} />
+                      <Monogram name={a.vacancy.company} logoUrl={a.vacancy.logo_url} />
                       <div className="min-w-0 flex-1">
                         <h2 className="truncate text-base leading-5.5 font-bold">{a.vacancy.title}</h2>
                         <p className="mt-0.5 truncate text-[13px] leading-4.5 text-muted">

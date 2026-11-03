@@ -13,4 +13,6 @@ export type VacancyRow = {
   description: string;
   requirements: string | null;
   created_at: string;
+  /** hr_profiles.logo_url (kompaniya nomi bo'yicha), yo'q bo'lsa null */
+  logo_url?: string | null;
 };

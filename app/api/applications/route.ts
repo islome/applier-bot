@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { loadLogoMap, logoFor } from "@/lib/company-logos";
 import { z } from "zod";
 import { authFromRequest } from "@/lib/telegram-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -60,6 +61,7 @@ export async function GET(req: Request) {
     vacancies: Vacancy | Vacancy[] | null;
   };
 
+  const logos = await loadLogoMap(db);
   const applications: ApplicationRow[] = [];
   for (const row of (data ?? []) as unknown as Raw[]) {
     const vacancy = Array.isArray(row.vacancies) ? row.vacancies[0] : row.vacancies;
@@ -68,7 +70,7 @@ export async function GET(req: Request) {
       id: row.id,
       status: normalizeStatus(row.status),
       created_at: row.created_at,
-      vacancy,
+      vacancy: { ...vacancy, logo_url: logoFor(logos, vacancy.company) },
     });
   }
 
