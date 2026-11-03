@@ -103,7 +103,7 @@ export async function POST(req: Request) {
 
   const { data: existing, error: existingError } = await db
     .from("candidates")
-    .select("resume_path")
+    .select("resume_path, avatar_path, photo_url")
     .eq("telegram_id", user.id)
     .maybeSingle();
 
@@ -136,7 +136,8 @@ export async function POST(req: Request) {
         telegram_id: user.id,
         username: user.username ?? null,
         language_code: user.language_code ?? null,
-        photo_url: user.photo_url ?? null,
+        // Nomzod o'zi rasm yuklagan bo'lsa, Telegram rasmi uni almashtirmaydi
+        photo_url: existing?.avatar_path ? existing.photo_url : (user.photo_url ?? null),
         resume_path: uploadedResumePath ?? existing?.resume_path ?? null,
         ...parsed.data,
       },

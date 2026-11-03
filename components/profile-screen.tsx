@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TabScreen } from "@/components/app-shell";
 import { ErrorState } from "@/components/empty-state";
 import type { CandidateRow } from "@/lib/candidate-schema";
 import { formatPhone, experienceLabel } from "@/lib/profile-format";
+import { AVATAR_ACCEPT, AVATAR_MAX_SIZE_BYTES } from "@/lib/candidate-photo";
 import type { TelegramUser } from "@/types/telegram";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
@@ -17,6 +18,9 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
   const [candidate, setCandidate] = useState<CandidateRow | null>(null);
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +47,40 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
     };
   }, [initData, reloadKey, router]);
 
+  async function onPhotoPicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // bir xil faylni qayta tanlash mumkin bo'lsin
+    if (!file) return;
+    setPhotoError("");
+    if (file.size > AVATAR_MAX_SIZE_BYTES) {
+      setPhotoError(t("profile.photoTooBig"));
+      return;
+    }
+
+    setPhotoBusy(true);
+    try {
+      const form = new FormData();
+      form.append("photo", file);
+      const res = await fetch("/api/candidate/photo", {
+        method: "POST",
+        headers: { Authorization: `tma ${initData}` }, // Content-Type ni brauzer o'zi qo'yadi
+        body: form,
+      });
+      const body = (await res.json().catch(() => ({}))) as { photo_url?: string; error?: string };
+      if (!res.ok || !body.photo_url) {
+        setPhotoError(res.status === 413 ? t("profile.photoTooBig") : res.status === 400 ? t("profile.photoType") : t("profile.photoError"));
+        return;
+      }
+      const photoUrl = body.photo_url;
+      setCandidate((c) => (c ? { ...c, photo_url: photoUrl } : c));
+    } catch (err) {
+      console.error("photo upload failed:", err);
+      setPhotoError(t("profile.photoError"));
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
   function retry() {
     setError("");
     setReloadKey((k) => k + 1);
@@ -65,16 +103,41 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
       ) : (
         <div className="flex flex-col gap-4">
           <section className="flex items-center gap-4 rounded-2xl border border-line bg-surface p-4">
-            <div
-              aria-hidden="true"
-              className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-full bg-accent text-[26px] font-bold text-white"
-            >
-              {user.photo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.photo_url} alt="" className="h-full w-full object-cover" />
-              ) : (
-                candidate.full_name.charAt(0).toUpperCase()
-              )}
+            <div className="relative h-16 w-16 flex-none">
+              <div
+                aria-hidden="true"
+                className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-accent text-[26px] font-bold text-white"
+              >
+                {candidate.photo_url ?? user.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={(candidate.photo_url ?? user.photo_url) as string}
+                    alt=""
+                    className={`h-full w-full object-cover ${photoBusy ? "opacity-50" : ""}`}
+                  />
+                ) : (
+                  candidate.full_name.charAt(0).toUpperCase()
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInput.current?.click()}
+                disabled={photoBusy}
+                aria-label={t("profile.photoChange")}
+                className="absolute -right-1 -bottom-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface bg-ink text-white disabled:opacity-60"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+                  <circle cx="12" cy="13" r="3.5" />
+                </svg>
+              </button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept={AVATAR_ACCEPT}
+                className="hidden"
+                onChange={onPhotoPicked}
+              />
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-xl leading-[26px] font-extrabold tracking-tight">
@@ -85,6 +148,8 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
               </p>
             </div>
           </section>
+          {photoBusy ? <p className="-mt-2 px-1 text-sm text-muted">{t("profile.photoUploading")}</p> : null}
+          {photoError ? <p role="alert" className="-mt-2 px-1 text-sm text-red-600">{photoError}</p> : null}
 
           <dl className="rounded-2xl border border-line bg-surface px-4 py-1">
             <Row label={t("profile.phone")} value={formatPhone(candidate.phone)} />
