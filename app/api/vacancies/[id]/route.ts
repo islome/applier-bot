@@ -72,14 +72,14 @@ export async function GET(
     hasProfile = true;
     const { data: app, error: appError } = await db
       .from("applications")
-      .select("id, status, created_at")
+      .select("*")
       .eq("candidate_id", candidate.id)
       .eq("vacancy_id", id)
       .maybeSingle();
     if (appError) {
       console.error("application lookup failed:", appError.message, appError.code);
-    } else {
-      application = app;
+    } else if (app && !(app.status === "cancel" && app.cancelled_by === "candidate")) {
+      application = { id: app.id, status: app.status, created_at: app.created_at };
     }
   }
 

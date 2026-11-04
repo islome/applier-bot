@@ -232,16 +232,18 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
                     {t("vacancy.applied")} · {t(`status.${state.application.status}` as "status.new" | "status.reviewed" | "status.shortlisted" | "status.rejected")}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setApplyError("");
-                    setConfirmCancel(true);
-                  }}
-                  className="h-13 flex-none rounded-[14px] border border-red-600/30 px-4 text-sm font-bold text-red-600"
-                >
-                  {t("vacancy.cancel")}
-                </button>
+                {["new", "confirmed", "interview"].includes(state.application.status) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setApplyError("");
+                      setConfirmCancel(true);
+                    }}
+                    className="h-13 flex-none rounded-[14px] border border-red-600/30 px-4 text-sm font-bold text-red-600"
+                  >
+                    {t("vacancy.cancel")}
+                  </button>
+                )}
               </div>
             )
           ) : !state.hasProfile ? (

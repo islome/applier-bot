@@ -121,7 +121,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
           <ul className="flex flex-col gap-3">
             {items.map((a) => {
               const step = PROGRESS_STEPS.indexOf(a.status);
-              const canCancel = a.status === "new";
+              const canCancel = a.status === "new" || a.status === "confirmed" || a.status === "interview";
               return (
                 <li key={a.id} className="overflow-hidden rounded-2xl border border-line bg-surface">
                   <Link

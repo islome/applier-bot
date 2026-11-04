@@ -8,6 +8,7 @@ import { normalizeStatus, type ApplicationRow } from "@/lib/application-types";
 type Db = ReturnType<typeof getSupabaseAdmin>;
 
 const bodySchema = z.object({ vacancy_id: z.uuid() });
+const CANCELLABLE = ["new", "confirmed", "interview", "reviewed", "shortlisted"];
 const deleteBodySchema = z.object({ application_id: z.uuid() });
 
 function dbError(label: string, error: { message: string; code?: string }) {
@@ -48,7 +49,7 @@ export async function GET(req: Request) {
 
   const { data, error } = await db
     .from("applications")
-    .select("id, status, created_at, vacancies(id, title, company, city)")
+    .select("*, vacancies(id, title, company, city)")
     .eq("candidate_id", candidate.id)
     .order("created_at", { ascending: false });
   if (error) return dbError("applications GET failed", error);
@@ -58,6 +59,7 @@ export async function GET(req: Request) {
     id: string;
     status: string;
     created_at: string;
+    cancelled_by?: string | null;
     vacancies: Vacancy | Vacancy[] | null;
   };
 
@@ -66,6 +68,8 @@ export async function GET(req: Request) {
   for (const row of (data ?? []) as unknown as Raw[]) {
     const vacancy = Array.isArray(row.vacancies) ? row.vacancies[0] : row.vacancies;
     if (!vacancy) continue;
+    // the candidate cancelled this one themselves: it is gone from their list (HR still sees it)
+    if (row.status === "cancel" && row.cancelled_by === "candidate") continue;
     applications.push({
       id: row.id,
       status: normalizeStatus(row.status),
@@ -145,13 +149,30 @@ export async function POST(req: Request) {
       .eq("vacancy_id", vacancy_id)
       .single();
     if (existingError) return dbError("existing application lookup failed", existingError);
+
+    // Cancelled by the candidate earlier -> applying again reopens it as "new".
+    // (Cancelled by HR stays cancelled. Without column cancelled_by this is skipped.)
+    if (existing.status === "cancel") {
+      const { data: reopened } = await db
+        .from("applications")
+        .update({ status: "new", cancelled_by: null })
+        .eq("id", existing.id)
+        .eq("cancelled_by", "candidate")
+        .select(COLUMNS)
+        .maybeSingle();
+      if (reopened) return NextResponse.json({ application: reopened }, { status: 201 });
+    }
     return NextResponse.json({ application: existing });
   }
 
   return dbError("applications POST failed", insertError);
 }
 
-/** DELETE /api/applications { application_id } -> permanently remove own application */
+/**
+ * DELETE /api/applications { application_id } -> the candidate cancels their own application.
+ * The row is kept with status "cancel" (+ cancelled_by = "candidate"), so HR can see it.
+ * Allowed while the application is new / confirmed / interview.
+ */
 export async function DELETE(req: Request) {
   const auth = authFromRequest(req);
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -181,32 +202,38 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Application not found" }, { status: 404 });
   }
 
-  // Faqat "new" holatdagi arizani nomzod o'zi o'chira oladi; keyingi bosqichlar HR nazoratida
-  const { data: deleted, error: deleteError } = await db
-    .from("applications")
-    .delete()
-    .eq("id", parsed.data.application_id)
-    .eq("candidate_id", candidate.id)
-    .eq("status", "new")
-    .select("id")
-    .maybeSingle();
+  const run = (patch: Record<string, unknown>) =>
+    db
+      .from("applications")
+      .update(patch)
+      .eq("id", parsed.data.application_id)
+      .eq("candidate_id", candidate.id)
+      .in("status", CANCELLABLE)
+      .select("id")
+      .maybeSingle();
 
-  if (deleteError) return dbError("applications DELETE failed", deleteError);
-  if (!deleted) {
+  let { data: updated, error: updateError } = await run({ status: "cancel", cancelled_by: "candidate" });
+  // column cancelled_by not created yet (SQL 007): cancel without it
+  if (updateError && (updateError.code === "42703" || updateError.code === "PGRST204")) {
+    ({ data: updated, error: updateError } = await run({ status: "cancel" }));
+  }
+  if (updateError) return dbError("applications cancel failed", updateError);
+
+  if (!updated) {
     const { data: existing } = await db
       .from("applications")
-      .select("id")
+      .select("id, status")
       .eq("id", parsed.data.application_id)
       .eq("candidate_id", candidate.id)
       .maybeSingle();
     if (existing) {
       return NextResponse.json(
-        { error: "Only new applications can be cancelled", code: "NOT_CANCELLABLE" },
+        { error: "This application can no longer be cancelled", code: "NOT_CANCELLABLE" },
         { status: 409 },
       );
     }
     return NextResponse.json({ error: "Application not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ deleted: true });
+  return NextResponse.json({ cancelled: true });
 }
