@@ -12,6 +12,7 @@ import {
   isAllowedResumeFile,
   RESUME_ALLOWED_EXTENSIONS,
   RESUME_MAX_SIZE_BYTES,
+  WORK_TYPES,
   type CandidateRow,
 } from "@/lib/candidate-schema";
 import { MAJORS } from "@/lib/constants";
@@ -27,6 +28,8 @@ type FormState = {
   major: string;
   experience_years: string;
   experience_text: string;
+  desired_salary: string;
+  work_type: string;
 };
 
 const inputClass =
@@ -62,6 +65,8 @@ export function EditProfileScreen({
     major: "",
     experience_years: "0",
     experience_text: "",
+    desired_salary: "",
+    work_type: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -92,6 +97,8 @@ export function EditProfileScreen({
             major: candidate.major,
             experience_years: String(candidate.experience_years),
             experience_text: candidate.experience_text ?? "",
+            desired_salary: candidate.desired_salary != null ? String(candidate.desired_salary) : "",
+            work_type: candidate.work_type ?? "",
           });
         }
         setLoaded(true);
@@ -105,6 +112,14 @@ export function EditProfileScreen({
       cancelled = true;
     };
   }, [initData, reloadKey]);
+
+  // /profile/edit#resume | #about | #prefs: jump straight to the field the profile screen asked for
+  useEffect(() => {
+    if (!loaded) return;
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    document.getElementById(`${id}-field`)?.scrollIntoView({ block: "center" });
+  }, [loaded]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -323,6 +338,7 @@ export function EditProfileScreen({
           </div>
         </Field>
 
+        <div id="about-field" className="scroll-mt-4">
         <Field label={t("profile.aboutExperience")} hint={t("profile.optional")} error={translateFormError(errors.experience_text, t)}>
           <textarea
             className={`${inputClass} h-[104px] resize-none py-3 leading-[22px]`}
@@ -332,10 +348,50 @@ export function EditProfileScreen({
             placeholder={t("profile.experiencePlaceholder")}
           />
         </Field>
+        </div>
+
+        <div id="prefs-field" className="grid scroll-mt-4 grid-cols-1 gap-4">
+          <Field label={t("profile.salaryField")} hint={t("profile.optional")} error={errors.desired_salary ? t("profile.salaryError") : ""}>
+            <input
+              className={inputClass}
+              value={form.desired_salary}
+              onChange={(e) => update("desired_salary", e.target.value.replace(/\D/g, "").slice(0, 10))}
+              inputMode="numeric"
+              placeholder="5000000"
+            />
+          </Field>
+
+          <div>
+            <span className="mb-1.5 block text-[13px] leading-[18px] font-semibold text-chip-ink">
+              {t("profile.workType")}
+              <span className="ml-1 font-medium text-muted">({t("profile.optional")})</span>
+            </span>
+            <div role="radiogroup" aria-label={t("profile.workType")} className="grid grid-cols-4 gap-2">
+              {[["", t("profile.workTypeAny")], ...WORK_TYPES.map((w) => [w, t(`profile.workType.${w}` as const)])].map(
+                ([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.work_type === value}
+                    onClick={() => update("work_type", value)}
+                    className={`min-h-11 rounded-xl border px-1 text-[13px] leading-4 font-semibold ${
+                      form.work_type === value
+                        ? "border-accent bg-accent text-white"
+                        : "border-field bg-surface text-ink"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ),
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Resume: the whole card is a <label>, so tapping anywhere opens the file picker
             and keyboard users can still focus the (visually hidden) input. */}
-        <div>
+        <div id="resume-field" className="scroll-mt-4">
           <span className="mb-1.5 block text-[13px] leading-[18px] font-semibold text-chip-ink">
             {t("profile.resumeOptional")}
           </span>

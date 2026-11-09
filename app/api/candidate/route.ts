@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authFromRequest } from "@/lib/telegram-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { AVATAR_BUCKET } from "@/lib/candidate-photo";
+import { normalizeStatus } from "@/lib/application-types";
 import {
   candidateInputSchema,
   getResumeContentType,
@@ -10,7 +12,7 @@ import {
 } from "@/lib/candidate-schema";
 
 const COLUMNS =
-  "id, telegram_id, photo_url, resume_path, full_name, phone, age, major, experience_years, experience_text, status, created_at, updated_at";
+  "id, telegram_id, photo_url, resume_path, full_name, phone, age, major, experience_years, experience_text, desired_salary, work_type, notify_status, status, created_at, updated_at";
 const RESUME_BUCKET = "candidate-resumes";
 
 /** GET /api/candidate -> the logged-in candidate's profile (or null) */
@@ -31,7 +33,24 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 
-  return NextResponse.json({ candidate: data });
+  // Small summary for the profile screen (candidate-cancelled applications are hidden, like in the list)
+  const stats = { total: 0, active: 0, interview: 0, hired: 0 };
+  if (data) {
+    const { data: apps } = await getSupabaseAdmin()
+      .from("applications")
+      .select("status, cancelled_by")
+      .eq("candidate_id", data.id);
+    for (const a of apps ?? []) {
+      if (a.status === "cancel" && a.cancelled_by === "candidate") continue;
+      const status = normalizeStatus(a.status);
+      stats.total += 1;
+      if (status === "new" || status === "confirmed") stats.active += 1;
+      if (status === "interview") stats.interview += 1;
+      if (status === "hired") stats.hired += 1;
+    }
+  }
+
+  return NextResponse.json({ candidate: data, stats });
 }
 
 /** POST /api/candidate -> create or update the logged-in candidate */
@@ -169,4 +188,87 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ candidate: data });
+}
+const OPEN_STATUSES = ["new", "confirmed", "interview", "reviewed", "shortlisted"];
+
+/**
+ * DELETE /api/candidate -> the candidate removes their own profile.
+ * Open applications are cancelled, files are removed. If HR history still points at the
+ * row (foreign key), the row is anonymised instead of deleted, so HR records stay consistent.
+ */
+export async function DELETE(req: Request) {
+  const auth = authFromRequest(req);
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  let db;
+  try {
+    db = getSupabaseAdmin();
+  } catch (e) {
+    console.error("supabase client failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "Storage is not configured" }, { status: 500 });
+  }
+
+  const { data: existing, error: lookupError } = await db
+    .from("candidates")
+    .select("id, resume_path, avatar_path")
+    .eq("telegram_id", auth.user.id)
+    .maybeSingle();
+  if (lookupError) {
+    console.error("candidate lookup failed:", lookupError.message);
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
+  }
+  if (!existing) return NextResponse.json({ ok: true });
+
+  // Cancel what is still open (as the candidate's own cancellation)
+  const { error: cancelError } = await db
+    .from("applications")
+    .update({ status: "cancel", cancelled_by: "candidate" })
+    .eq("candidate_id", existing.id)
+    .in("status", OPEN_STATUSES);
+  if (cancelError) {
+    console.error("candidate delete: cancel applications failed:", cancelError.message);
+    return NextResponse.json({ error: "Could not delete profile" }, { status: 500 });
+  }
+
+  const { error: deleteError } = await db.from("candidates").delete().eq("id", existing.id);
+  if (deleteError) {
+    if (deleteError.code !== "23503") {
+      console.error("candidate delete failed:", deleteError.message, deleteError.code);
+      return NextResponse.json({ error: "Could not delete profile" }, { status: 500 });
+    }
+    // Still referenced: wipe the personal data but keep the row
+    const { error: anonError } = await db
+      .from("candidates")
+      .update({
+        telegram_id: -Math.abs(auth.user.id),
+        username: null,
+        language_code: null,
+        photo_url: null,
+        avatar_path: null,
+        resume_path: null,
+        full_name: "Deleted user",
+        phone: "+998000000000",
+        age: null,
+        experience_text: null,
+        desired_salary: null,
+        work_type: null,
+        notify_status: false,
+      })
+      .eq("id", existing.id);
+    if (anonError) {
+      console.error("candidate anonymise failed:", anonError.message, anonError.code);
+      return NextResponse.json({ error: "Could not delete profile" }, { status: 500 });
+    }
+  }
+
+  if (existing.resume_path) {
+    const { error } = await db.storage.from(RESUME_BUCKET).remove([existing.resume_path]);
+    if (error) console.error("candidate delete: resume cleanup failed:", error.message);
+  }
+  if (existing.avatar_path) {
+    const { error } = await db.storage.from(AVATAR_BUCKET).remove([existing.avatar_path]);
+    if (error) console.error("candidate delete: avatar cleanup failed:", error.message);
+  }
+
+  return NextResponse.json({ ok: true });
 }

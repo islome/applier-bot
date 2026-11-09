@@ -40,6 +40,9 @@ export function isAllowedResumeFile(file: Pick<File, "name" | "size">) {
   );
 }
 
+export const WORK_TYPES = ["onsite", "remote", "hybrid"] as const;
+export type WorkType = (typeof WORK_TYPES)[number];
+
 // Shared by the API route (server) and the form (client).
 export const candidateInputSchema = z.object({
   full_name: z.string().trim().min(2, "Enter your full name").max(100),
@@ -51,6 +54,15 @@ export const candidateInputSchema = z.object({
   major: z.enum(MAJORS, { message: "Choose a major" }),
   experience_years: z.coerce.number().int().min(0).max(50),
   experience_text: z.string().trim().max(1000).optional().default(""),
+  // Optional preferences: "" / null clears, undefined leaves the saved value untouched
+  desired_salary: z.preprocess(
+    (v) => (v === "" || v === null ? null : typeof v === "string" ? Number(v.replace(/\s/g, "")) : v),
+    z.number().int().min(0).max(1_000_000_000).nullable().optional(),
+  ),
+  work_type: z.preprocess(
+    (v) => (v === "" ? null : v),
+    z.enum(WORK_TYPES).nullable().optional(),
+  ),
 });
 
 export type CandidateInput = z.infer<typeof candidateInputSchema>;
@@ -61,6 +73,7 @@ export type CandidateRow = CandidateInput & {
   telegram_id: number;
   photo_url: string | null;
   resume_path: string | null;
+  notify_status: boolean;
   status: "new" | "reviewed" | "shortlisted" | "rejected";
   created_at: string;
   updated_at: string;
