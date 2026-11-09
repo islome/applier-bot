@@ -1,3 +1,5 @@
+export type { VacancyInsights } from "@/lib/vacancy-insights";
+
 export type EmploymentType = "full_time" | "part_time" | "remote" | "internship";
 
 export type VacancyRow = {

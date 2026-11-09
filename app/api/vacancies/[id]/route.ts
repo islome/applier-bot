@@ -3,6 +3,7 @@ import { z } from "zod";
 import { authFromRequest } from "@/lib/telegram-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { loadLogoMap, logoFor } from "@/lib/company-logos";
+import { loadVacancyInsights } from "@/lib/vacancy-insights";
 
 const COLUMNS =
   "id, title, company, city, major, employment_type, salary_min, salary_max, salary_currency, description, requirements, created_at";
@@ -11,6 +12,7 @@ const COLUMNS =
  * GET /api/vacancies/:id -> one active vacancy (Telegram users only), plus:
  *   hasProfile:  true / false, or null if we could not tell (the client then lets them try)
  *   application: this user's application for this vacancy, or null
+ *   insights:    applicants / hired counts, hire rate, HR response time and online state (or null)
  */
 export async function GET(
   req: Request,
@@ -86,5 +88,7 @@ export async function GET(
   const logos = await loadLogoMap(db);
   const vacancy = { ...data, logo_url: logoFor(logos, data.company) };
 
-  return NextResponse.json({ vacancy, hasProfile, application });
+  const insights = await loadVacancyInsights(db, id);
+
+  return NextResponse.json({ vacancy, hasProfile, application, insights });
 }

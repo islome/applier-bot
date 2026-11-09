@@ -8,7 +8,8 @@ import { Monogram } from "@/components/vacancy-card";
 import type { ApplicationSummary } from "@/lib/application-types";
 import { haptic } from "@/lib/haptics";
 import { employmentLabel, formatSalaryShort, timeAgo } from "@/lib/vacancy-format";
-import type { VacancyRow } from "@/lib/vacancy-types";
+import type { VacancyInsights, VacancyRow } from "@/lib/vacancy-types";
+import { HrOnlineBadge, VacancyInsightsSection } from "@/components/vacancy-insights";
 import { useLanguage } from "@/components/language-provider";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import {
@@ -23,6 +24,7 @@ type State =
       vacancy: VacancyRow;
       hasProfile: boolean;
       application: ApplicationSummary | null;
+      insights: VacancyInsights | null;
     }
   | { kind: "notfound" }
   | { kind: "error"; message: string };
@@ -51,6 +53,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
           // only an explicit false means "no profile"; missing/unknown lets the user try
           hasProfile: body.hasProfile !== false,
           application: (body.application ?? null) as ApplicationSummary | null,
+          insights: (body.insights ?? null) as VacancyInsights | null,
         } as const;
       })
       .then((next) => {
@@ -276,6 +279,10 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
             </p>
           </div>
         </section>
+
+        <HrOnlineBadge insights={state.insights} />
+
+        <VacancyInsightsSection insights={state.insights} />
 
         <section className="grid grid-cols-2 gap-2.5">
           <Fact label={t("vacancy.salary")} value={formatSalaryShort(v, t)} valueClassName="text-money" />
