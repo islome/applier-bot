@@ -12,7 +12,7 @@ import {
 } from "@/lib/candidate-schema";
 
 const COLUMNS =
-  "id, telegram_id, photo_url, resume_path, full_name, phone, age, major, experience_years, experience_text, desired_salary, work_type, notify_status, status, created_at, updated_at";
+  "id, telegram_id, photo_url, resume_path, full_name, phone, age, major, experience_years, experience_text, desired_salary, work_type, notify_status, job_alerts, status, created_at, updated_at";
 const RESUME_BUCKET = "candidate-resumes";
 
 /** GET /api/candidate -> the logged-in candidate's profile (or null) */
@@ -253,6 +253,7 @@ export async function DELETE(req: Request) {
         desired_salary: null,
         work_type: null,
         notify_status: false,
+        job_alerts: false,
       })
       .eq("id", existing.id);
     if (anonError) {

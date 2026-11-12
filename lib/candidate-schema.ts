@@ -74,6 +74,7 @@ export type CandidateRow = CandidateInput & {
   photo_url: string | null;
   resume_path: string | null;
   notify_status: boolean;
+  job_alerts: boolean;
   status: "new" | "reviewed" | "shortlisted" | "rejected";
   created_at: string;
   updated_at: string;

@@ -35,3 +35,48 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 # job-applier
+
+## Job alerts (bot messages for matching vacancies)
+
+When HR publishes a vacancy, the bot messages every candidate whose profile matches it, with a
+button that opens the vacancy in the Mini App.
+
+- Matching rule: `lib/vacancy-match.ts` (same major; `salary_max`, or `salary_min`, reaches `desired_salary`;
+  `work_type = remote` only gets remote vacancies). The same rule shows the "Siz uchun" / "Для вас" tag on cards.
+- Sending: `POST /api/vacancies/alerts` (`app/api/vacancies/alerts/route.ts`). Skips candidates with
+  `job_alerts = false`, anyone already alerted for that vacancy (`vacancy_alerts` table), and anyone who got
+  3 alerts in the last 24 hours. Sends at ~25 msg/s. If a user blocked the bot (403), sets `job_alerts = false`.
+  Messages are in Russian when the candidate's Telegram `language_code` starts with `ru`, otherwise Uzbek.
+- Candidates turn alerts on/off in Profile → Settings ("Yangi vakansiyalar haqida xabar").
+
+### Setup
+
+1. Run `supabase/005_job_alerts.sql` in the Supabase SQL Editor **before** deploying this version
+   (the app reads `candidates.job_alerts`).
+2. Add an env var to the app (Vercel → Settings → Environment Variables), then redeploy:
+   - `JOB_ALERTS_SECRET`: a long random string, e.g. `openssl rand -hex 32`.
+   - `TELEGRAM_BOT_TOKEN`, `MINI_APP_URL`, `SUPABASE_SERVICE_ROLE_KEY` are already used by the bot.
+3. Create the Database Webhook in Supabase Dashboard → Database → Webhooks → **Create a new hook**:
+   - Name: `vacancy-job-alerts`
+   - Table: `public.vacancies`
+   - Events: **Insert**. Also tick **Update** if HR saves drafts (`is_active = false`) and publishes later;
+     the route only acts on an update that turns `is_active` from false to true.
+   - Type: HTTP Request, Method: `POST`
+   - URL: `https://<your-app-domain>/api/vacancies/alerts`
+   - HTTP Headers: `Content-Type: application/json` and `x-job-alerts-secret: <JOB_ALERTS_SECRET>`
+   - Timeout: 5000 ms. The route answers right after picking recipients and sends in the background.
+     Calling it twice for the same vacancy is safe: nobody gets the same vacancy twice.
+
+### Trigger by hand / dry run
+
+`dry_run` logs the messages that would be sent (server logs) and returns the recipients, without sending
+or writing anything:
+
+```bash
+curl -X POST "https://<your-app-domain>/api/vacancies/alerts?dry_run=1" \
+  -H "x-job-alerts-secret: $JOB_ALERTS_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"vacancy_id": "<vacancy uuid>"}'
+```
+
+Drop `?dry_run=1` to really send (answers `202` with `queued`).

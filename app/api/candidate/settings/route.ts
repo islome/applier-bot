@@ -3,9 +3,12 @@ import { z } from "zod";
 import { authFromRequest } from "@/lib/telegram-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-const bodySchema = z.object({ notify_status: z.boolean() });
+// Send only the switch that changed; at least one is required
+const bodySchema = z
+  .object({ notify_status: z.boolean().optional(), job_alerts: z.boolean().optional() })
+  .refine((b) => b.notify_status !== undefined || b.job_alerts !== undefined);
 
-/** PATCH /api/candidate/settings -> { notify_status } */
+/** PATCH /api/candidate/settings -> { notify_status?, job_alerts? } */
 export async function PATCH(req: Request) {
   const auth = authFromRequest(req);
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,14 +18,14 @@ export async function PATCH(req: Request) {
 
   const { data, error } = await getSupabaseAdmin()
     .from("candidates")
-    .update({ notify_status: parsed.data.notify_status })
+    .update(parsed.data)
     .eq("telegram_id", auth.user.id)
-    .select("notify_status")
+    .select("notify_status, job_alerts")
     .maybeSingle();
   if (error) {
     console.error("settings PATCH failed:", error.message, error.code);
     return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
   if (!data) return NextResponse.json({ error: "Create your profile first" }, { status: 404 });
-  return NextResponse.json({ notify_status: data.notify_status });
+  return NextResponse.json({ notify_status: data.notify_status, job_alerts: data.job_alerts });
 }
