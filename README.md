@@ -48,6 +48,15 @@ button that opens the vacancy in the Mini App.
   3 alerts in the last 24 hours. Sends at ~25 msg/s. If a user blocked the bot (403), sets `job_alerts = false`.
   Messages are in Russian when the candidate's Telegram `language_code` starts with `ru`, otherwise Uzbek.
 - Candidates turn alerts on/off in Profile → Settings ("Yangi vakansiyalar haqida xabar").
+- People who already applied to a vacancy never get a job alert for it.
+
+### Vacancy paused / reopened notices
+
+The same webhook also handles `is_active` changes. When HR turns a vacancy off or back on, everyone with an
+open application to it (`new`, `confirmed` or `interview`, not withdrawn) gets a message:
+"⏸ Vakansiya vaqtincha to‘xtatildi" / "▶️ Vakansiya qayta ochildi" (Russian if their Telegram language is Russian),
+with a button to their applications. It respects the candidate's "Ariza holati haqida xabar" switch
+(`notify_status`) and does not count toward the 3 job alerts per day. Plain edits of a vacancy send nothing.
 
 ### Setup
 
@@ -59,8 +68,8 @@ button that opens the vacancy in the Mini App.
 3. Create the Database Webhook in Supabase Dashboard → Database → Webhooks → **Create a new hook**:
    - Name: `vacancy-job-alerts`
    - Table: `public.vacancies`
-   - Events: **Insert**. Also tick **Update** if HR saves drafts (`is_active = false`) and publishes later;
-     the route only acts on an update that turns `is_active` from false to true.
+   - Events: **Insert** and **Update**. On an update the route only acts when `is_active` changed
+     (paused/reopened notices, plus job alerts when it turned active).
    - Type: HTTP Request, Method: `POST`
    - URL: `https://<your-app-domain>/api/vacancies/alerts`
    - HTTP Headers: `Content-Type: application/json` and `x-job-alerts-secret: <JOB_ALERTS_SECRET>`

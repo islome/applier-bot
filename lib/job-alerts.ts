@@ -33,6 +33,52 @@ const COPY = {
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+export type VacancyStatusChange = "activated" | "deactivated";
+
+const STATUS_COPY = {
+  uz: {
+    deactivated: {
+      title: "⏸ Vakansiya vaqtincha to‘xtatildi",
+      body: "Siz ariza topshirgan {v} vakansiyasi vaqtincha faol emas.\nArizangiz saqlanib qoladi. Vakansiya qayta ochilsa, shu yerda xabar beramiz.",
+    },
+    activated: {
+      title: "▶️ Vakansiya qayta ochildi",
+      body: "Siz ariza topshirgan {v} vakansiyasi yana faol.\nArizangiz ko‘rib chiqilishda davom etadi.",
+    },
+    button: "Arizalarim",
+  },
+  ru: {
+    deactivated: {
+      title: "⏸ Вакансия временно приостановлена",
+      body: "Вакансия {v}, на которую вы откликнулись, временно неактивна.\nВаша заявка сохранится. Когда вакансию снова откроют, сообщим здесь.",
+    },
+    activated: {
+      title: "▶️ Вакансия снова открыта",
+      body: "Вакансия {v}, на которую вы откликнулись, снова активна.\nВаша заявка продолжает рассматриваться.",
+    },
+    button: "Мои заявки",
+  },
+} as const;
+
+/** sendMessage payload for applicants when HR pauses or reopens a vacancy they applied to. */
+export function buildVacancyStatusNotice(
+  vacancy: Pick<AlertVacancy, "title" | "company">,
+  change: VacancyStatusChange,
+  language: AlertLanguage,
+  appUrl: string,
+) {
+  const copy = STATUS_COPY[language];
+  const v = `«<b>${esc(vacancy.title)}</b>» (${esc(vacancy.company)})`;
+  return {
+    text: `<b>${copy[change].title}</b>\n\n${copy[change].body.replace("{v}", v)}`,
+    parse_mode: "HTML",
+    link_preview_options: { is_disabled: true },
+    reply_markup: {
+      inline_keyboard: [[{ text: copy.button, web_app: { url: new URL("applications", appUrl).toString() } }]],
+    },
+  };
+}
+
 /** sendMessage payload (without chat_id): HTML text plus a button that opens the vacancy in the Mini App. */
 export function buildJobAlert(vacancy: AlertVacancy, language: AlertLanguage, appUrl: string) {
   const copy = COPY[language];
