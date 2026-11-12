@@ -11,7 +11,7 @@ import { employmentLabel, formatSalaryShort, timeAgo } from "@/lib/vacancy-forma
 import type { VacancyInsights, VacancyRow } from "@/lib/vacancy-types";
 import { HrOnlineBadge, VacancyInsightsSection } from "@/components/vacancy-insights";
 import { useLanguage } from "@/components/language-provider";
-import { LoadingAnimation } from "@/components/ui/loading-animation";
+import { VacancyDetailSkeleton } from "@/components/skeletons";
 import {
   LottieAnimation,
   notFoundAnimationSrc,
@@ -144,7 +144,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
   if (state.kind === "loading") {
     return (
       <PushScreen title={t("vacancy.title")}>
-        <LoadingAnimation label={t("common.loading")} />
+        <VacancyDetailSkeleton label={t("common.loading")} />
       </PushScreen>
     );
   }
@@ -157,10 +157,10 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
           {notFound ? (
             <LottieAnimation src={notFoundAnimationSrc} className="h-40 w-40 object-contain" />
           ) : null}
-          <h2 className="text-lg font-bold">
+          <h2 className="text-headline font-semibold">
             {notFound ? t("vacancy.notFound") : t("vacancy.loadError")}
           </h2>
-          <p className="mt-1 max-w-xs text-sm text-muted">
+          <p className="mt-1 max-w-xs text-body text-muted">
             {notFound
               ? t("vacancy.unavailable")
               : state.kind === "error"
@@ -171,7 +171,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
             <button
               type="button"
               onClick={retry}
-              className="mt-5 h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white"
+              className="btn btn-primary mt-5"
             >
               {t("common.tryAgain")}
             </button>
@@ -194,7 +194,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
       footer={
         <div className="space-y-2">
           {applyError ? (
-            <p className="text-center text-sm text-red-500">
+            <p className="text-center text-footnote text-danger">
               {applyError === "cancel-error"
                 ? t("vacancy.cancelError")
                 : applyError === "complete-profile"
@@ -205,7 +205,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
           {state.application ? (
             confirmCancel ? (
               <>
-                <p className="text-center text-sm text-muted">
+                <p className="text-center text-footnote text-muted">
                   {t("vacancy.cancelConfirm")}
                 </p>
                 <div className="flex gap-2">
@@ -213,7 +213,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
                     type="button"
                     disabled={cancelling}
                     onClick={() => setConfirmCancel(false)}
-                    className="h-13 rounded-[14px] border border-line text-base font-bold disabled:opacity-60"
+                    className="btn btn-lg btn-secondary flex-1"
                   >
                     {t("vacancy.keepApplication")}
                   </button>
@@ -221,7 +221,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
                     type="button"
                     disabled={cancelling}
                     onClick={cancelApplication}
-                    className="h-13 rounded-[14px] bg-red-600 text-base font-bold text-white disabled:opacity-60"
+                    className="btn btn-lg btn-danger flex-1"
                   >
                     {cancelling ? t("vacancy.cancelling") : t("vacancy.confirmCancel")}
                   </button>
@@ -229,7 +229,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
               </>
             ) : (
               <div className="flex gap-2">
-                <div className="flex h-13 min-w-0 flex-1 items-center justify-center gap-2 rounded-[14px] bg-chip text-center text-sm font-bold text-chip-ink">
+                <div className="flex min-h-13 min-w-0 flex-1 items-center justify-center gap-2 rounded-control bg-chip px-3 text-center text-body font-medium text-chip-ink">
                   <IconCheck className="h-5 w-5 flex-none" />
                   <span className="truncate">
                     {t("vacancy.applied")} · {t(`status.${state.application.status}` as "status.new" | "status.reviewed" | "status.shortlisted" | "status.rejected")}
@@ -242,7 +242,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
                       setApplyError("");
                       setConfirmCancel(true);
                     }}
-                    className="h-13 flex-none rounded-[14px] border border-red-600/30 px-4 text-sm font-bold text-red-600"
+                    className="btn btn-lg btn-danger flex-none"
                   >
                     {t("vacancy.cancel")}
                   </button>
@@ -252,7 +252,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
           ) : !state.hasProfile ? (
             <Link
               href="/profile/edit"
-              className="flex h-13 w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white"
+              className="btn btn-lg btn-primary w-full"
             >
               {t("vacancy.completeProfile")}
             </Link>
@@ -261,7 +261,7 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
               type="button"
               onClick={apply}
               disabled={applying}
-              className="flex h-13 w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white disabled:opacity-60"
+              className="btn btn-lg btn-primary w-full"
             >
               {applying ? t("vacancy.sending") : t("vacancy.apply")}
             </button>
@@ -273,8 +273,8 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
         <section className="flex items-center gap-3.5">
           <Monogram name={v.company} logoUrl={v.logo_url} size="lg" />
           <div className="min-w-0 flex-1">
-            <h2 className="text-xl leading-6 font-extrabold tracking-tight">{v.title}</h2>
-            <p className="mt-0.5 text-[14px] leading-5 text-muted">
+            <h2 className="text-title font-semibold tracking-tight">{v.title}</h2>
+            <p className="mt-0.5 text-footnote text-muted">
               {v.company} · {t("vacancy.posted")} {timeAgo(v.created_at, now, language, t)}
             </p>
           </div>
@@ -292,18 +292,18 @@ export function VacancyDetail({ id, initData }: { id: string; initData: string }
         </section>
 
         <section>
-          <h3 className="mb-1.5 text-base leading-5.5 font-bold">{t("vacancy.about")}</h3>
-          <p className="text-[15px] leading-5.5 whitespace-pre-line text-ink/90">
+          <h3 className="mb-1.5 text-headline font-semibold">{t("vacancy.about")}</h3>
+          <p className="text-body whitespace-pre-line">
             {v.description}
           </p>
         </section>
 
         {requirements.length > 0 ? (
           <section>
-            <h3 className="mb-2 text-base leading-5.5 font-bold">{t("vacancy.requirements")}</h3>
+            <h3 className="mb-2 text-headline font-semibold">{t("vacancy.requirements")}</h3>
             <ul className="flex flex-col gap-2">
               {requirements.map((line, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-[15px] leading-5.5 text-ink/90">
+                <li key={i} className="flex items-start gap-2.5 text-body">
                   <IconCheck className="mt-px h-5 w-5 flex-none text-accent-text" />
                   <span>{line}</span>
                 </li>
@@ -326,9 +326,9 @@ function Fact({
   valueClassName?: string;
 }) {
   return (
-    <div className="min-w-0 rounded-[14px] border border-line bg-surface p-3.5">
-      <div className="text-xs leading-4 font-semibold text-muted">{label}</div>
-      <div className={`mt-1 text-[15px] leading-5 font-bold ${valueClassName}`}>{value}</div>
+    <div className="min-w-0 rounded-card bg-surface p-3.5">
+      <div className="text-footnote text-muted">{label}</div>
+      <div className={`mt-0.5 text-body font-semibold ${valueClassName}`}>{value}</div>
     </div>
   );
 }

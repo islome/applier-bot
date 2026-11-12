@@ -12,7 +12,7 @@ import { PROGRESS_STEPS, type ApplicationRow } from "@/lib/application-types";
 import { haptic } from "@/lib/haptics";
 import { timeAgo } from "@/lib/vacancy-format";
 import { useLanguage } from "@/components/language-provider";
-import { LoadingAnimation } from "@/components/ui/loading-animation";
+import { ApplicationListSkeleton, SubtitleBone } from "@/components/skeletons";
 
 export function ApplicationsScreen({ initData }: { initData: string }) {
   const { language, t } = useLanguage();
@@ -82,8 +82,9 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
     }
   }
 
-  let subtitle = t("applications.loading");
-  if (error) subtitle = t("common.somethingWrong");
+  // Bone while loading; nothing on error (the error card says it)
+  let subtitle: React.ReactNode = <SubtitleBone />;
+  if (error) subtitle = undefined;
   else if (items) {
     subtitle =
       items.length === 0
@@ -96,7 +97,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
       {error ? (
         <ErrorState message={t("common.applicationsLoadError")} onRetry={retry} />
       ) : !items ? (
-        <LoadingAnimation label={t("applications.loading")} />
+        <ApplicationListSkeleton label={t("applications.loading")} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<IconFile className="h-7 w-7" />}
@@ -105,7 +106,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
           action={
             <Link
               href="/vacancies"
-              className="mt-6 flex h-12 items-center rounded-[14px] bg-accent px-6 text-[15px] font-bold text-white"
+              className="btn btn-lg btn-primary mt-6"
             >
               {t("applications.browse")}
             </Link>
@@ -114,7 +115,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
       ) : (
         <>
           {actionError && (
-            <p role="alert" className="mb-3 rounded-xl bg-red-500/10 p-3 text-sm text-red-500">
+            <p role="alert" className="mb-3 rounded-control bg-danger/10 p-3 text-footnote text-danger">
               {t("applications.cancelError")}
             </p>
           )}
@@ -123,7 +124,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
               const step = PROGRESS_STEPS.indexOf(a.status);
               const canCancel = a.status === "new" || a.status === "confirmed" || a.status === "interview";
               return (
-                <li key={a.id} className="overflow-hidden rounded-2xl border border-line bg-surface">
+                <li key={a.id} className="overflow-hidden rounded-card bg-surface">
                   <Link
                     href={`/vacancies/${a.vacancy.id}`}
                     onClick={() => haptic.light()}
@@ -132,8 +133,8 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                     <div className="flex items-start gap-3">
                       <Monogram name={a.vacancy.company} logoUrl={a.vacancy.logo_url} />
                       <div className="min-w-0 flex-1">
-                        <h2 className="truncate text-base leading-5.5 font-bold">{a.vacancy.title}</h2>
-                        <p className="mt-0.5 truncate text-[13px] leading-4.5 text-muted">
+                        <h2 className="truncate text-headline font-semibold">{a.vacancy.title}</h2>
+                        <p className="mt-0.5 truncate text-footnote text-muted">
                           {a.vacancy.company} · {a.vacancy.city}
                         </p>
                       </div>
@@ -141,7 +142,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                     </div>
                     <div className="mt-3 flex items-center justify-between gap-3">
                       <StatusChip status={a.status} />
-                      <span className="text-xs text-muted">{timeAgo(a.created_at, now, language, t)}</span>
+                      <span className="text-caption text-muted">{timeAgo(a.created_at, now, language, t)}</span>
                     </div>
                     {step >= 0 && (
                       <div className="mt-3 flex gap-1.5" aria-hidden="true">
@@ -157,13 +158,13 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                   {canCancel &&
                     (confirmingId === a.id ? (
                       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
-                        <p className="text-sm text-muted">{t("applications.removeConfirm")}</p>
+                        <p className="text-footnote text-muted">{t("applications.removeConfirm")}</p>
                         <div className="flex gap-2">
                           <button
                             type="button"
                             disabled={deletingId === a.id}
                             onClick={() => setConfirmingId(null)}
-                            className="min-h-10 rounded-xl border border-line px-3 text-sm font-semibold disabled:opacity-60"
+                            className="btn btn-secondary"
                           >
                             {t("applications.keep")}
                           </button>
@@ -171,7 +172,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                             type="button"
                             disabled={deletingId === a.id}
                             onClick={() => deleteApplication(a.id)}
-                            className="min-h-10 rounded-xl bg-red-600 px-3 text-sm font-semibold text-white disabled:opacity-60"
+                            className="btn btn-danger"
                           >
                             {deletingId === a.id ? t("applications.removing") : t("applications.remove")}
                           </button>
@@ -185,7 +186,7 @@ export function ApplicationsScreen({ initData }: { initData: string }) {
                             setActionError("");
                             setConfirmingId(a.id);
                           }}
-                          className="min-h-10 text-sm font-semibold text-red-600"
+                          className="min-h-11 text-footnote font-medium text-danger"
                         >
                           {t("applications.cancel")}
                         </button>

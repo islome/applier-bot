@@ -18,7 +18,7 @@ import {
 import { MAJORS } from "@/lib/constants";
 import { haptic } from "@/lib/haptics";
 import { translateFormError, useLanguage } from "@/components/language-provider";
-import { LoadingAnimation } from "@/components/ui/loading-animation";
+import { FormSkeleton } from "@/components/skeletons";
 import type { TelegramUser } from "@/types/telegram";
 
 type FormState = {
@@ -33,7 +33,7 @@ type FormState = {
 };
 
 const inputClass =
-  "h-12 w-full rounded-xl border border-field bg-surface px-3.5 text-base text-ink outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/25";
+  "h-12 w-full rounded-control border border-field bg-surface px-3.5 text-callout text-ink outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/25";
 
 const RESUME_ACCEPT = RESUME_ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(",");
 
@@ -231,7 +231,7 @@ export function EditProfileScreen({
   if (!loaded) {
     return (
       <PushScreen title={title} fallbackHref="/profile" backEnabled={!welcome}>
-        <LoadingAnimation label={t("common.loading")} />
+        <FormSkeleton label={t("common.loading")} />
       </PushScreen>
     );
   }
@@ -255,13 +255,13 @@ export function EditProfileScreen({
       footer={
         <div className="space-y-2">
           {saveError ? (
-            <p className="text-center text-sm text-red-500">{t("common.profileSaveError")}</p>
+            <p className="text-center text-footnote text-danger">{t("common.profileSaveError")}</p>
           ) : null}
           <button
             type="submit"
             form="profile-form"
             disabled={saving}
-            className="flex h-[52px] w-full items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white disabled:opacity-60"
+            className="btn btn-lg btn-primary w-full"
           >
             {saving ? t("profile.saving") : welcome ? t("profile.continue") : t("profile.save")}
           </button>
@@ -269,7 +269,7 @@ export function EditProfileScreen({
       }
     >
       {welcome ? (
-        <p className="mb-5 text-[15px] leading-[22px] text-muted">
+        <p className="mb-5 text-body text-muted">
           {t("profile.welcome", { name: user.first_name })}
         </p>
       ) : null}
@@ -341,7 +341,7 @@ export function EditProfileScreen({
         <div id="about-field" className="scroll-mt-4">
         <Field label={t("profile.aboutExperience")} hint={t("profile.optional")} error={translateFormError(errors.experience_text, t)}>
           <textarea
-            className={`${inputClass} h-[104px] resize-none py-3 leading-[22px]`}
+            className={`${inputClass} h-[104px] resize-none py-3`}
             value={form.experience_text}
             onChange={(e) => update("experience_text", e.target.value)}
             maxLength={1000}
@@ -362,9 +362,9 @@ export function EditProfileScreen({
           </Field>
 
           <div>
-            <span className="mb-1.5 block text-[13px] leading-[18px] font-semibold text-chip-ink">
+            <span className="mb-1.5 block text-footnote font-medium text-chip-ink">
               {t("profile.workType")}
-              <span className="ml-1 font-medium text-muted">({t("profile.optional")})</span>
+              <span className="ml-1 font-normal text-muted">({t("profile.optional")})</span>
             </span>
             <div role="radiogroup" aria-label={t("profile.workType")} className="grid grid-cols-4 gap-2">
               {[["", t("profile.workTypeAny")], ...WORK_TYPES.map((w) => [w, t(`profile.workType.${w}` as const)])].map(
@@ -375,9 +375,9 @@ export function EditProfileScreen({
                     role="radio"
                     aria-checked={form.work_type === value}
                     onClick={() => update("work_type", value)}
-                    className={`min-h-11 rounded-xl border px-1 text-[13px] leading-4 font-semibold ${
+                    className={`min-h-11 rounded-control border px-1 text-footnote font-medium ${
                       form.work_type === value
-                        ? "border-accent bg-accent text-white"
+                        ? "border-accent bg-accent text-on-accent"
                         : "border-field bg-surface text-ink"
                     }`}
                   >
@@ -392,13 +392,13 @@ export function EditProfileScreen({
         {/* Resume: the whole card is a <label>, so tapping anywhere opens the file picker
             and keyboard users can still focus the (visually hidden) input. */}
         <div id="resume-field" className="scroll-mt-4">
-          <span className="mb-1.5 block text-[13px] leading-[18px] font-semibold text-chip-ink">
+          <span className="mb-1.5 block text-footnote font-medium text-chip-ink">
             {t("profile.resumeOptional")}
           </span>
 
           <label
-            className={`flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed bg-surface p-4 transition-colors focus-within:ring-2 focus-within:ring-accent/25 active:bg-chip ${
-              errors.resume ? "border-red-500" : "border-field"
+            className={`flex cursor-pointer items-center gap-3 rounded-card border border-dashed bg-surface p-4 transition-colors focus-within:ring-2 focus-within:ring-accent/25 active:bg-chip ${
+              errors.resume ? "border-danger" : "border-field"
             } ${saving ? "pointer-events-none opacity-60" : ""}`}
           >
             <input
@@ -416,8 +416,8 @@ export function EditProfileScreen({
               <IconUpload className="h-5 w-5" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[15px] leading-5 font-bold">{resumeTitle}</span>
-              <span className="mt-0.5 block text-xs leading-4 text-muted">{resumeSub}</span>
+              <span className="block truncate text-body font-semibold">{resumeTitle}</span>
+              <span className="mt-0.5 block text-caption text-muted">{resumeSub}</span>
             </span>
             {hasSavedResume && !resumeFile ? (
               <IconCheck className="h-5 w-5 flex-none text-money" />
@@ -428,13 +428,13 @@ export function EditProfileScreen({
             <button
               type="button"
               onClick={removeSelectedResume}
-              className="mt-2 h-9 text-sm font-semibold text-accent-text"
+              className="mt-2 h-9 text-footnote font-medium text-accent-text"
             >
               {t("profile.removeFile")}
             </button>
           ) : null}
           {errors.resume ? (
-            <span className="mt-1 block text-xs text-red-500">
+            <span className="mt-1 block text-caption text-danger">
               {translateFormError(errors.resume, t)}
             </span>
           ) : null}
@@ -457,12 +457,12 @@ function Field({
 }) {
   return (
     <label className="block min-w-0">
-      <span className="mb-1.5 block text-[13px] leading-[18px] font-semibold text-chip-ink">
+      <span className="mb-1.5 block text-footnote font-medium text-chip-ink">
         {label}
-        {hint ? <span className="ml-1 font-medium text-muted">({hint})</span> : null}
+        {hint ? <span className="ml-1 font-normal text-muted">({hint})</span> : null}
       </span>
       {children}
-      {error ? <span className="mt-1 block text-xs text-red-500">{error}</span> : null}
+      {error ? <span className="mt-1 block text-caption text-danger">{error}</span> : null}
     </label>
   );
 }

@@ -42,11 +42,11 @@ function Redirector({ initData }: { initData: string }) {
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-3xl border border-black/10 bg-white p-6 text-center dark:border-white/10 dark:bg-zinc-900">
-        <p className="text-sm text-red-500">{t("home.loadError")}</p>
+      <div className="w-full max-w-sm rounded-card bg-surface p-6 text-center">
+        <p className="text-body text-danger">{t("home.loadError")}</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-4 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white"
+          className="btn btn-primary mt-4"
         >
           {t("common.tryAgain")}
         </button>

@@ -14,7 +14,7 @@ import { AVATAR_ACCEPT, AVATAR_MAX_SIZE_BYTES } from "@/lib/candidate-photo";
 import { haptic } from "@/lib/haptics";
 import type { TelegramUser } from "@/types/telegram";
 import { LanguageSwitcher, useLanguage } from "@/components/language-provider";
-import { LoadingAnimation } from "@/components/ui/loading-animation";
+import { ProfileSkeleton } from "@/components/skeletons";
 
 type Stats = { total: number; active: number; interview: number; hired: number };
 
@@ -180,15 +180,15 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
       {error ? (
         <ErrorState message={t("common.profileLoadError")} onRetry={retry} />
       ) : !candidate || !completeness ? (
-        <LoadingAnimation label={t("common.loading")} />
+        <ProfileSkeleton label={t("common.loading")} />
       ) : (
         <div className="flex flex-col gap-4 pb-2">
           {/* Identity */}
-          <section className="flex items-center gap-4 rounded-2xl border border-line bg-surface p-4">
+          <section className="flex items-center gap-4 rounded-card bg-surface p-4">
             <div className="relative h-16 w-16 flex-none">
               <div
                 aria-hidden="true"
-                className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-accent text-[26px] font-bold text-white"
+                className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-accent text-large font-semibold text-on-accent"
               >
                 {photo ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -212,7 +212,7 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
                 aria-label={t("profile.photoChange")}
                 className="absolute -right-3 -bottom-3 flex h-11 w-11 items-center justify-center disabled:opacity-60"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface bg-ink text-white">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-surface bg-ink text-surface">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
                     <circle cx="12" cy="13" r="3.5" />
@@ -228,10 +228,10 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
               />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-xl leading-[26px] font-extrabold tracking-tight">
+              <h2 className="truncate text-title font-semibold">
                 {candidate.full_name}
               </h2>
-              <p className="mt-0.5 truncate text-sm leading-5 text-muted">
+              <p className="mt-0.5 truncate text-footnote text-muted">
                 {user.username ? `@${user.username} · ` : ""}{t("profile.fromTelegram")}
               </p>
             </div>
@@ -247,12 +247,12 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
               </svg>
             </Link>
           </section>
-          {photoError ? <p role="alert" className="-mt-2 px-1 text-sm text-red-600">{photoError}</p> : null}
+          {photoError ? <p role="alert" className="-mt-2 px-1 text-footnote text-danger">{photoError}</p> : null}
 
           {/* Completeness */}
-          <section className="rounded-2xl border border-line bg-surface p-4">
+          <section className="rounded-card bg-surface p-4">
             <div className="flex items-baseline justify-between gap-3">
-              <h3 className="text-[15px] leading-5 font-bold">
+              <h3 className="text-body font-semibold">
                 {completeness.next
                   ? t("profile.completeness", { percent: completeness.percent })
                   : t("profile.complete")}
@@ -275,18 +275,18 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
               <button
                 type="button"
                 onClick={() => nextStepAction(completeness.next as NextStep)}
-                className="mt-3 flex min-h-11 w-full items-center justify-between gap-3 rounded-xl bg-chip px-3.5 text-left"
+                className="mt-3 flex min-h-11 w-full items-center justify-between gap-3 rounded-control bg-chip px-3.5 text-left"
               >
-                <span className="text-[15px] leading-5 font-semibold">
+                <span className="text-body font-medium">
                   {t(`profile.next.${completeness.next}` as const)}
                 </span>
-                <span className="flex flex-none items-center gap-1 text-sm font-bold text-accent-text">
+                <span className="flex flex-none items-center gap-1 text-footnote font-semibold text-accent-text">
                   +{completeness.weights[completeness.next]}%
                   <IconChevronRight className="h-4 w-4" />
                 </span>
               </button>
             ) : (
-              <p className="mt-2 text-sm leading-5 text-muted">{t("profile.completeHint")}</p>
+              <p className="mt-2 text-footnote text-muted">{t("profile.completeHint")}</p>
             )}
           </section>
 
@@ -294,16 +294,16 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
           <Link
             href="/applications"
             onClick={() => haptic.select()}
-            className="block rounded-2xl border border-line bg-surface p-4"
+            className="block rounded-card bg-surface p-4"
           >
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-[15px] leading-5 font-bold">{t("profile.apps.title")}</h3>
+              <h3 className="text-body font-semibold">{t("profile.apps.title")}</h3>
               <IconChevronRight className="h-4 w-4 flex-none text-muted" />
             </div>
             {stats.total === 0 ? (
-              <p className="mt-1.5 text-sm leading-5 text-muted">
+              <p className="mt-1.5 text-footnote text-muted">
                 {t("profile.apps.empty")} ·{" "}
-                <span className="font-semibold text-accent-text">{t("profile.apps.browse")}</span>
+                <span className="font-medium text-accent-text">{t("profile.apps.browse")}</span>
               </p>
             ) : (
               <>
@@ -312,7 +312,7 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
                   <Stat value={stats.interview} label={t("profile.apps.interview")} />
                   <Stat value={stats.hired} label={t("profile.apps.hired")} />
                 </div>
-                <p className="mt-2.5 text-xs leading-4 text-muted">
+                <p className="mt-2.5 text-caption text-muted">
                   {t("profile.apps.total", { count: stats.total })}
                 </p>
               </>
@@ -320,7 +320,7 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
           </Link>
 
           {/* Details */}
-          <dl className="rounded-2xl border border-line bg-surface px-4 py-1">
+          <dl className="rounded-card bg-surface px-4 py-1">
             <Row label={t("profile.phone")} value={formatPhone(candidate.phone)} hint={t("profile.phoneHint")} />
             <Row
               label={t("profile.age")}
@@ -337,8 +337,8 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
 
           {/* Job preferences */}
           <section>
-            <h3 className="mb-1.5 px-1 text-sm leading-5 font-bold text-muted">{t("profile.prefsTitle")}</h3>
-            <dl className="rounded-2xl border border-line bg-surface px-4 py-1">
+            <h3 className="mb-1.5 px-4 text-footnote font-medium text-muted">{t("profile.prefsTitle")}</h3>
+            <dl className="rounded-card bg-surface px-4 py-1">
               <Row
                 label={t("profile.salary")}
                 value={
@@ -358,20 +358,20 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
           </section>
 
           {candidate.experience_text ? (
-            <section className="rounded-2xl border border-line bg-surface p-4">
-              <h3 className="mb-1.5 text-sm leading-5 font-bold text-muted">{t("profile.experienceAbout")}</h3>
-              <p className="text-[15px] leading-[23px] whitespace-pre-line text-ink/90">
+            <section className="rounded-card bg-surface p-4">
+              <h3 className="mb-1.5 text-footnote font-medium text-muted">{t("profile.experienceAbout")}</h3>
+              <p className="text-body whitespace-pre-line">
                 {candidate.experience_text}
               </p>
             </section>
           ) : null}
 
           {/* Resume */}
-          <section className="rounded-2xl border border-line bg-surface p-4">
+          <section className="rounded-card bg-surface p-4">
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm leading-5 font-bold text-muted">{t("profile.resume")}</h3>
-                <p className={`mt-0.5 truncate text-[15px] leading-5 font-semibold ${candidate.resume_path ? "" : "text-muted"}`}>
+                <h3 className="text-footnote font-medium text-muted">{t("profile.resume")}</h3>
+                <p className={`mt-0.5 text-body font-medium ${candidate.resume_path ? "" : "text-muted"}`}>
                   {resumeLabel}
                 </p>
               </div>
@@ -380,33 +380,33 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
                   type="button"
                   onClick={openResume}
                   disabled={resumeBusy}
-                  className="h-11 flex-none rounded-xl bg-chip px-4 text-sm font-bold disabled:opacity-60"
+                  className="btn btn-secondary flex-none px-3"
                 >
                   {t("profile.resumeView")}
                 </button>
               ) : null}
               <Link
                 href="/profile/edit#resume"
-                className="flex h-11 flex-none items-center rounded-xl bg-accent px-4 text-sm font-bold text-white"
+                className="btn btn-primary flex-none px-3"
               >
                 {candidate.resume_path ? t("profile.resumeReplace") : t("profile.resumeUpload")}
               </Link>
             </div>
-            {resumeError ? <p role="alert" className="mt-2 text-sm text-red-600">{resumeError}</p> : null}
+            {resumeError ? <p role="alert" className="mt-2 text-footnote text-danger">{resumeError}</p> : null}
           </section>
 
           {/* Settings */}
           <section>
-            <h3 className="mb-1.5 px-1 text-sm leading-5 font-bold text-muted">{t("profile.settings")}</h3>
-            <div className="rounded-2xl border border-line bg-surface px-4">
+            <h3 className="mb-1.5 px-4 text-footnote font-medium text-muted">{t("profile.settings")}</h3>
+            <div className="rounded-card bg-surface px-4">
               <div className="flex min-h-[60px] items-center justify-between gap-4 border-b border-line">
-                <span className="text-[15px] font-semibold">{t("language.label")}</span>
+                <span className="text-body">{t("language.label")}</span>
                 <LanguageSwitcher />
               </div>
               <div className="flex min-h-[60px] items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-[15px] leading-5 font-semibold">{t("profile.notify")}</p>
-                  <p className="text-xs leading-4 text-muted">{t("profile.notifyHint")}</p>
+                  <p className="text-body">{t("profile.notify")}</p>
+                  <p className="text-caption text-muted">{t("profile.notifyHint")}</p>
                 </div>
                 <button
                   type="button"
@@ -430,12 +430,12 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
                 </button>
               </div>
             </div>
-            {notifyError ? <p role="alert" className="mt-1.5 px-1 text-sm text-red-600">{notifyError}</p> : null}
+            {notifyError ? <p role="alert" className="mt-1.5 px-4 text-footnote text-danger">{notifyError}</p> : null}
           </section>
 
           <Link
             href="/profile/edit"
-            className="flex h-[52px] items-center justify-center rounded-[14px] bg-accent text-base font-bold text-white"
+            className="btn btn-lg btn-primary"
           >
             {t("profile.edit")}
           </Link>
@@ -446,7 +446,7 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
               setDeleteError("");
               setConfirmDelete(true);
             }}
-            className="h-11 text-sm font-semibold text-red-600"
+            className="h-11 text-body font-medium text-danger"
           >
             {t("profile.delete")}
           </button>
@@ -462,18 +462,18 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
           onClick={() => !deleting && setConfirmDelete(false)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-surface p-5 pb-[max(env(safe-area-inset-bottom),20px)]"
+            className="w-full max-w-sm rounded-card bg-surface p-5 pb-[max(env(safe-area-inset-bottom),20px)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="delete-title" className="text-lg font-extrabold">{t("profile.deleteTitle")}</h2>
-            <p className="mt-1.5 text-sm leading-5 text-muted">{t("profile.deleteText")}</p>
-            {deleteError ? <p role="alert" className="mt-2 text-sm text-red-600">{deleteError}</p> : null}
+            <h2 id="delete-title" className="text-headline font-semibold">{t("profile.deleteTitle")}</h2>
+            <p className="mt-1.5 text-body text-muted">{t("profile.deleteText")}</p>
+            {deleteError ? <p role="alert" className="mt-2 text-footnote text-danger">{deleteError}</p> : null}
             <div className="mt-4 flex flex-col gap-2">
               <button
                 type="button"
                 onClick={deleteProfile}
                 disabled={deleting}
-                className="h-12 rounded-[14px] bg-red-600 text-base font-bold text-white disabled:opacity-60"
+                className="btn btn-lg btn-danger"
               >
                 {deleting ? t("profile.deleting") : t("profile.deleteConfirm")}
               </button>
@@ -481,7 +481,7 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
                 type="button"
                 onClick={() => setConfirmDelete(false)}
                 disabled={deleting}
-                className="h-12 rounded-[14px] bg-chip text-base font-bold disabled:opacity-60"
+                className="btn btn-lg btn-secondary"
               >
                 {t("profile.deleteCancel")}
               </button>
@@ -495,9 +495,9 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="rounded-xl bg-chip px-2 py-2.5 text-center">
-      <div className="text-xl leading-6 font-extrabold">{value}</div>
-      <div className="mt-0.5 truncate text-xs leading-4 text-muted">{label}</div>
+    <div className="rounded-control bg-chip px-2 py-2.5 text-center">
+      <div className="text-title font-semibold">{value}</div>
+      <div className="mt-0.5 truncate text-caption text-muted">{label}</div>
     </div>
   );
 }
@@ -522,15 +522,15 @@ function Row({
         last ? "" : "border-b border-line"
       }`}
     >
-      <dt className="min-w-0 text-sm text-muted">
+      <dt className="min-w-0 flex-1 text-body text-muted">
         {label}
-        {hint ? <span className="block text-xs leading-4 text-muted/80">{hint}</span> : null}
+        {hint ? <span className="block text-caption text-muted">{hint}</span> : null}
       </dt>
-      <dd className="min-w-0 truncate text-right text-[15px] font-semibold">
+      <dd className="max-w-[60%] flex-none truncate text-right text-body font-medium">
         {value ? (
           value
         ) : emptyLabel ? (
-          <Link href="/profile/edit" className="inline-flex min-h-11 items-center font-bold text-accent-text">
+          <Link href="/profile/edit" className="inline-flex min-h-11 items-center font-medium text-accent-text">
             + {emptyLabel}
           </Link>
         ) : (
