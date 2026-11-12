@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TabScreen } from "@/components/app-shell";
+import { ErrorState } from "@/components/empty-state";
 import { FilterSheet, type FilterOption } from "@/components/filter-sheet";
 import { IconFilter, IconSearch } from "@/components/icons";
 import { VacancyCard } from "@/components/vacancy-card";
 import { haptic } from "@/lib/haptics";
 import { useLanguage } from "@/components/language-provider";
-import { LoadingAnimation } from "@/components/ui/loading-animation";
+import { SubtitleBone, VacancyListSkeleton } from "@/components/skeletons";
 import type { VacancyRow } from "@/lib/vacancy-types";
 import type { TelegramUser } from "@/types/telegram";
 import EmptyBoxAnimation from "@/app/EmptyBoxAnimation";
@@ -72,8 +73,9 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
     ...majorCounts.map(([m, count]) => ({ value: m, label: m, count })),
   ];
 
-  let subtitle = t("vacancies.loading");
-  if (error) subtitle = t("common.somethingWrong");
+  // Bone while loading; nothing on error (the error card says it)
+  let subtitle: React.ReactNode = <SubtitleBone />;
+  if (error) subtitle = undefined;
   else if (vacancies) {
     subtitle = filtering
       ? t("vacancies.filteredCount", { shown: filtered.length, total })
@@ -107,7 +109,7 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
             if (e.key === "Enter") e.currentTarget.blur();
           }}
           enterKeyHint="search"
-          className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
+          className="min-w-0 flex-1 bg-transparent text-callout text-ink outline-none placeholder:text-muted"
         />
         <button
           type="button"
@@ -132,7 +134,7 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
               ? `${t("vacancies.field")}: ${majorLabel(major)}. ${t("vacancies.changeField")}`
               : t("vacancies.field")
           }
-          className={`glass flex h-12 flex-none items-center gap-2 rounded-full px-4 text-sm font-semibold ${
+          className={`glass flex h-12 flex-none items-center gap-2 rounded-full px-4 text-body font-medium ${
             major ? "border-accent/60 text-accent-text" : "text-ink"
           }`}
         >
@@ -153,18 +155,9 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
         action={<Avatar user={user} />}
       >
         {error ? (
-          <div className="rounded-2xl border border-line bg-surface p-5 text-center">
-            <p className="text-sm text-red-500">{t("common.vacanciesLoadError")}</p>
-            <button
-              type="button"
-              onClick={retry}
-              className="mt-4 h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white"
-            >
-              {t("common.tryAgain")}
-            </button>
-          </div>
+          <ErrorState message={t("common.vacanciesLoadError")} onRetry={retry} />
         ) : !vacancies ? (
-          <LoadingAnimation label={t("vacancies.loading")} />
+          <VacancyListSkeleton label={t("vacancies.loading")} />
         ) : total === 0 ? (
           <EmptyState
             icon={<EmptyBoxAnimation />}
@@ -180,7 +173,7 @@ export function VacanciesScreen({ user, initData }: { user: TelegramUser; initDa
               <button
                 type="button"
                 onClick={clearFilters}
-                className="mt-5 h-11 rounded-xl border border-line bg-surface px-5 text-sm font-bold"
+                className="btn btn-secondary mt-5"
               >
                 {t("vacancies.clearFilters")}
               </button>
@@ -222,7 +215,7 @@ function Avatar({ user }: { user: TelegramUser }) {
     <Link
       href="/profile"
       aria-label={t("vacancies.openProfile")}
-      className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-full bg-accent text-[17px] font-bold text-white"
+      className="flex h-11 w-11 flex-none items-center justify-center overflow-hidden rounded-full bg-accent text-headline font-semibold text-on-accent"
     >
       {user.photo_url ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -248,8 +241,8 @@ function EmptyState({
   return (
     <div className="flex flex-col items-center px-6 py-16 text-center">
       {icon}
-      <h2 className="text-lg font-bold">{title}</h2>
-      <p className="mt-1 max-w-xs text-sm text-muted">{text}</p>
+      <h2 className="text-headline font-semibold">{title}</h2>
+      <p className="mt-1 max-w-xs text-body text-muted">{text}</p>
       {action}
     </div>
   );

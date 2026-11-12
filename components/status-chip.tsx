@@ -3,10 +3,10 @@ import { useLanguage } from "@/components/language-provider";
 
 const STYLES: Record<ApplicationStatus, string> = {
   new: "bg-chip text-chip-ink",
-  confirmed: "bg-accent/10 text-accent",
-  interview: "bg-amber-500/15 text-amber-800 dark:text-amber-300",
-  hired: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300",
-  cancel: "bg-red-500/15 text-red-800 dark:text-red-300",
+  confirmed: "bg-accent/10 text-accent-text",
+  interview: "bg-warn/15 text-warn",
+  hired: "bg-money/12 text-money",
+  cancel: "bg-danger/12 text-danger",
 };
 
 const KEYS = {
@@ -22,7 +22,7 @@ export function StatusChip({ status }: { status: string }) {
   const s = normalizeStatus(status);
   return (
     <span
-      className={`inline-block flex-none rounded-full px-2.5 py-1 text-xs leading-4 font-bold ${STYLES[s]}`}
+      className={`inline-block flex-none rounded-full px-2.5 py-1 text-caption font-semibold ${STYLES[s]}`}
     >
       {t(KEYS[s])}
     </span>

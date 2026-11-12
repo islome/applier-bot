@@ -8,7 +8,7 @@ export default function EmptyBoxAnimation() {
       src="/EmptyBox.json"
       loop
       autoplay
-      className="mx-auto h-80 w-80"
+      className="mx-auto mb-2 h-36 w-36"
       aria-hidden="true"
     />
   );

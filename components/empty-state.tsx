@@ -18,8 +18,8 @@ export function EmptyState({
           {icon}
         </div>
       ) : null}
-      <h2 className="text-lg font-bold">{title}</h2>
-      <p className="mt-1 max-w-xs text-sm text-muted">{text}</p>
+      <h2 className="text-headline font-semibold">{title}</h2>
+      <p className="mt-1 max-w-xs text-body text-muted">{text}</p>
       {action}
     </div>
   );
@@ -28,12 +28,12 @@ export function EmptyState({
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   const { t } = useLanguage();
   return (
-    <div className="rounded-2xl border border-line bg-surface p-5 text-center">
-      <p className="text-sm text-red-500">{message}</p>
+    <div className="rounded-card bg-surface p-5 text-center">
+      <p className="text-body text-danger">{message}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="mt-4 h-11 rounded-xl bg-accent px-5 text-sm font-bold text-white"
+        className="btn btn-primary mt-4"
       >
         {t("common.tryAgain")}
       </button>

@@ -39,6 +39,12 @@ export interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
   close: () => void;
+  // Optional: missing on old clients, so always call with ?.
+  isVersionAtLeast?: (version: string) => boolean;
+  setHeaderColor?: (color: "bg_color" | "secondary_bg_color" | `#${string}`) => void;
+  setBackgroundColor?: (color: string) => void;
+  onEvent?: (event: "themeChanged", cb: () => void) => void;
+  offEvent?: (event: "themeChanged", cb: () => void) => void;
   // Optional: very old Telegram clients do not have these
   BackButton?: TelegramBackButton;
   HapticFeedback?: TelegramHapticFeedback;

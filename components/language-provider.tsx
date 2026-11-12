@@ -538,7 +538,7 @@ export function LanguageSwitcher() {
     <div
       role="group"
       aria-label={t("language.label")}
-      className="flex rounded-full border border-line bg-surface p-1"
+      className="flex rounded-full bg-chip p-1"
     >
       {(["uz", "ru"] as const).map((option) => (
         <button
@@ -547,8 +547,8 @@ export function LanguageSwitcher() {
           aria-pressed={language === option}
           aria-label={t(option === "uz" ? "language.uz" : "language.ru")}
           onClick={() => setLanguage(option)}
-          className={`min-h-9 rounded-full px-2.5 text-xs font-bold transition-colors ${
-            language === option ? "bg-accent text-white" : "text-muted"
+          className={`min-h-9 rounded-full px-3 text-footnote font-semibold transition-colors ${
+            language === option ? "bg-accent text-on-accent" : "text-muted"
           }`}
         >
           {option.toUpperCase()}

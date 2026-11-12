@@ -34,8 +34,8 @@ function TabBar() {
             href={href}
             aria-current={active ? "page" : undefined}
             onClick={() => haptic.select()}
-            className={`flex min-h-11 flex-1 flex-col items-center justify-center gap-1 text-xs leading-4 ${
-              active ? "font-bold text-accent-text" : "font-semibold text-muted"
+            className={`flex min-h-11 flex-1 flex-col items-center justify-center gap-1 text-caption ${
+              active ? "font-semibold text-accent-text" : "font-medium text-muted"
             }`}
           >
             <Icon />
@@ -60,7 +60,8 @@ export function TabScreen({
   children,
 }: {
   title: string;
-  subtitle?: string;
+  /** Text, or <SubtitleBone /> while the count is loading */
+  subtitle?: React.ReactNode;
   /** Right side of the header (e.g. avatar) */
   action?: React.ReactNode;
   /** Sticks under the header while the list scrolls beneath it (search + filter) */
@@ -74,8 +75,8 @@ export function TabScreen({
       className={`flex items-start justify-between gap-3 px-5 pt-4 pb-3 ${scrollHeader ? "" : "flex-none"}`}
     >
       <div className="min-w-0">
-        <h1 className="text-[28px] leading-8.5 font-extrabold tracking-tight">{title}</h1>
-        {subtitle ? <p className="mt-0.5 text-sm leading-5 text-muted">{subtitle}</p> : null}
+        <h1 className="text-large font-bold tracking-tight">{title}</h1>
+        {subtitle ? <p className="mt-0.5 text-footnote text-muted">{subtitle}</p> : null}
       </div>
       {action}
     </header>
@@ -137,7 +138,7 @@ export function PushScreen({
     <div className="flex h-dvh flex-col bg-app text-ink">
       {/* No in-app back button: Telegram already shows its own BackButton in its top bar */}
       <header className="relative flex h-14 flex-none items-center justify-center px-14">
-        <h1 className="min-w-0 truncate text-[17px] leading-6 font-bold">{title}</h1>
+        <h1 className="min-w-0 truncate text-headline font-semibold">{title}</h1>
         {action ? (
           <div className="absolute right-3 flex h-11 w-11 items-center justify-center">{action}</div>
         ) : null}

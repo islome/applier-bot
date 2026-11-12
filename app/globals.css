@@ -1,37 +1,69 @@
 @import "tailwindcss";
 
-/* ---------- Design tokens (from the Figma-style canvas) ----------
-   Light is the designed theme. Dark values are derived from it and follow the
-   system / Telegram colour scheme. Components only use the semantic names
-   below (bg-app, bg-surface, text-ink, text-muted, border-line, ...). */
+/* ---------- Colour tokens ----------
+   Inside Telegram the app wears the user's Telegram theme: telegram-web-app.js sets
+   --tg-theme-* on <html> and keeps them current. The --fb-* values are our own
+   fallbacks (opened outside Telegram, or an older client that omits a param).
+
+   Light/dark for the colours Telegram doesn't provide (money, warn, danger, glass)
+   follows Telegram's colorScheme through <html data-theme>, which <TelegramTheme />
+   sets. The system setting is only used until that runs. */
 :root {
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --ink: #0f1115;
-  --muted: #5b6270;
-  --line: #e4e6eb;
-  --chip: #f0f2f5;
-  --chip-ink: #3f4654;
-  --accent: #2563eb; /* buttons, fills (white text on it: 5.2:1) */
-  --accent-text: #2563eb; /* accent used as text/icon colour */
+  --fb-bg: #f2f3f5;
+  --fb-surface: #ffffff;
+  --fb-ink: #0f1115;
+  --fb-accent: #2563eb;
+  --fb-accent-text: #2563eb;
+
   --money: #047857;
-  --field-border: #858d9b;
+  --warn: #b45309;
+  --danger: #c62828;
+  --glass-rim: rgb(255 255 255 / 0.65);
+  --glass-shadow: rgb(15 17 21 / 0.1);
+}
+
+:root[data-theme="dark"] {
+  --fb-bg: #0b0b0d;
+  --fb-surface: #17181c;
+  --fb-ink: #f2f3f5;
+  --fb-accent-text: #6b9bff;
+  --money: #34d399;
+  --warn: #fbbf24;
+  --danger: #ff6b6b;
+  --glass-rim: rgb(255 255 255 / 0.12);
+  --glass-shadow: rgb(0 0 0 / 0.4);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0b0d;
-    --surface: #17181c;
-    --ink: #f2f3f5;
-    --muted: #a0a7b4;
-    --line: #26282e;
-    --chip: #22242a;
-    --chip-ink: #c9ced8;
-    --accent: #2563eb;
-    --accent-text: #6b9bff;
+  :root:not([data-theme="light"]) {
+    --fb-bg: #0b0b0d;
+    --fb-surface: #17181c;
+    --fb-ink: #f2f3f5;
+    --fb-accent-text: #6b9bff;
     --money: #34d399;
-    --field-border: #6b7280;
+    --warn: #fbbf24;
+    --danger: #ff6b6b;
+    --glass-rim: rgb(255 255 255 / 0.12);
+    --glass-shadow: rgb(0 0 0 / 0.4);
   }
+}
+
+/* Semantic tokens: the only colours components use (bg-app, bg-surface, text-ink, ...) */
+:root {
+  --bg: var(--tg-theme-secondary-bg-color, var(--fb-bg));
+  --surface: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, var(--fb-surface)));
+  --ink: var(--tg-theme-text-color, var(--fb-ink));
+  --accent: var(--tg-theme-button-color, var(--fb-accent));
+  --on-accent: var(--tg-theme-button-text-color, #ffffff);
+  --accent-text: var(--tg-theme-accent-text-color, var(--tg-theme-link-color, var(--fb-accent-text)));
+
+  /* Derived from ink + surface, so contrast holds in any Telegram theme
+     (Telegram's own hint_color is often below 4.5:1 for body text) */
+  --muted: color-mix(in srgb, var(--ink) 62%, var(--surface));
+  --line: color-mix(in srgb, var(--ink) 10%, var(--surface));
+  --chip: color-mix(in srgb, var(--ink) 6%, var(--surface));
+  --chip-ink: color-mix(in srgb, var(--ink) 80%, var(--surface));
+  --field-border: color-mix(in srgb, var(--ink) 40%, var(--surface));
 }
 
 @theme inline {
@@ -43,56 +75,82 @@
   --color-chip: var(--chip);
   --color-chip-ink: var(--chip-ink);
   --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
   --color-accent-text: var(--accent-text);
   --color-money: var(--money);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
   --color-field: var(--field-border);
+
+  /* Manrope comes from next/font in app/layout.tsx */
+  --font-sans: var(--font-manrope), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* ---------- "Liquid glass": translucent, blurred, lit rim ----------
-   Works best when content scrolls underneath (the sticky search row does that).
-   In @layer components so Tailwind utilities (border-*, text-*) can still override. */
+/* ---------- Scale ----------
+   The full type scale. Tailwind's default sizes (text-sm, text-lg, ...) are switched
+   off on purpose so new code can't drift off the scale. Each size carries its own
+   line height, so components don't need leading-* classes. */
+@theme {
+  --text-*: initial;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-footnote: 13px;
+  --text-footnote--line-height: 18px;
+  --text-body: 15px;
+  --text-body--line-height: 21px;
+  --text-callout: 16px; /* inputs (no iOS focus zoom) and large buttons */
+  --text-callout--line-height: 22px;
+  --text-headline: 17px;
+  --text-headline--line-height: 22px;
+  --text-title: 20px;
+  --text-title--line-height: 26px;
+  --text-large: 28px;
+  --text-large--line-height: 34px;
+
+  --radius-control: 12px; /* buttons, inputs, small tiles */
+  --radius-card: 16px; /* cards and grouped sections */
+  --radius-sheet: 28px; /* bottom sheets */
+}
+
 @layer components {
+  /* Buttons: .btn (44px) or .btn .btn-lg (52px), plus one colour variant */
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-control px-4 text-body font-semibold transition-opacity select-none active:opacity-80 disabled:opacity-60;
+  }
+  .btn-lg {
+    @apply min-h-13 px-6 text-callout;
+  }
+  .btn-primary {
+    @apply bg-accent text-on-accent;
+  }
+  .btn-secondary {
+    @apply bg-chip text-ink;
+  }
+  .btn-danger {
+    @apply bg-danger/12 text-danger;
+  }
+
+  /* "Liquid glass": translucent, blurred, lit rim. Works best when content scrolls
+     underneath (the sticky search row does that). */
   .glass,
   .glass-strong {
-    border: 1px solid rgb(255 255 255 / 0.65);
+    border: 1px solid var(--glass-rim);
     -webkit-backdrop-filter: blur(18px) saturate(180%);
     backdrop-filter: blur(18px) saturate(180%);
   }
   .glass {
-    background: rgb(255 255 255 / 0.55);
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.85),
-      inset 0 -1px 0 rgb(255 255 255 / 0.2),
-      0 0 0 0.5px rgb(15 17 21 / 0.08),
-      0 4px 18px rgb(15 17 21 / 0.08);
+      inset 0 1px 0 var(--glass-rim),
+      0 4px 18px var(--glass-shadow);
   }
   .glass-strong {
-    background: rgb(255 255 255 / 0.9);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
     -webkit-backdrop-filter: blur(28px) saturate(180%);
     backdrop-filter: blur(28px) saturate(180%);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.9),
-      0 -8px 40px rgb(15 17 21 / 0.18);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .glass,
-    .glass-strong {
-      border-color: rgb(255 255 255 / 0.14);
-    }
-    .glass {
-      background: rgb(44 46 54 / 0.5);
-      box-shadow:
-        inset 0 1px 0 rgb(255 255 255 / 0.14),
-        inset 0 -1px 0 rgb(255 255 255 / 0.04),
-        0 6px 20px rgb(0 0 0 / 0.35);
-    }
-    .glass-strong {
-      background: rgb(28 30 36 / 0.88);
-      box-shadow:
-        inset 0 1px 0 rgb(255 255 255 / 0.16),
-        0 -8px 40px rgb(0 0 0 / 0.5);
-    }
+      inset 0 1px 0 var(--glass-rim),
+      0 -8px 40px var(--glass-shadow);
   }
 }
 
@@ -104,8 +162,17 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+@keyframes spinner-turn {
+  to { transform: rotate(360deg); }
+}
 .sheet-in { animation: sheet-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1); }
 .fade-in { animation: fade-in 0.2s ease-out; }
+/* Waits 400ms before showing: most loads finish first and nothing flashes */
+.spinner {
+  animation:
+    fade-in 0.2s ease-out 0.4s both,
+    spinner-turn 0.8s linear infinite;
+}
 @media (prefers-reduced-motion: reduce) {
   .sheet-in, .fade-in { animation: none; }
 }
@@ -113,8 +180,5 @@
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family:
-    Manrope, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
