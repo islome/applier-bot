@@ -17,4 +17,6 @@ export type VacancyRow = {
   created_at: string;
   /** hr_profiles.logo_url (kompaniya nomi bo'yicha), yo'q bo'lsa null */
   logo_url?: string | null;
+  /** Matches the logged-in candidate's profile (lib/vacancy-match.ts); only set by GET /api/vacancies */
+  for_you?: boolean;
 };

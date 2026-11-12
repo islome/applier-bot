@@ -118,22 +118,22 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
     }
   }
 
-  async function toggleNotify(next: boolean) {
+  async function toggleSetting(key: "notify_status" | "job_alerts", next: boolean) {
     if (!candidate) return;
-    const previous = candidate.notify_status;
+    const previous = candidate[key];
     setNotifyError("");
-    setCandidate({ ...candidate, notify_status: next }); // optimistic
+    setCandidate({ ...candidate, [key]: next }); // optimistic
     haptic.select();
     try {
       const res = await fetch("/api/candidate/settings", {
         method: "PATCH",
         headers: { ...auth, "Content-Type": "application/json" },
-        body: JSON.stringify({ notify_status: next }),
+        body: JSON.stringify({ [key]: next }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch (err) {
-      console.error("notify toggle failed:", err);
-      setCandidate((c) => (c ? { ...c, notify_status: previous } : c));
+      console.error(`${key} toggle failed:`, err);
+      setCandidate((c) => (c ? { ...c, [key]: previous } : c));
       setNotifyError(t("profile.notifyError"));
     }
   }
@@ -403,32 +403,19 @@ export function ProfileScreen({ user, initData }: { user: TelegramUser; initData
                 <span className="text-body">{t("language.label")}</span>
                 <LanguageSwitcher />
               </div>
-              <div className="flex min-h-[60px] items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-body">{t("profile.notify")}</p>
-                  <p className="text-caption text-muted">{t("profile.notifyHint")}</p>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={candidate.notify_status}
-                  aria-label={t("profile.notify")}
-                  onClick={() => toggleNotify(!candidate.notify_status)}
-                  className="flex h-11 w-14 flex-none items-center justify-end"
-                >
-                  <span
-                    className={`relative h-7 w-12 rounded-full transition-colors ${
-                      candidate.notify_status ? "bg-accent" : "bg-line"
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${
-                        candidate.notify_status ? "left-[22px]" : "left-0.5"
-                      }`}
-                    />
-                  </span>
-                </button>
-              </div>
+              <SwitchRow
+                label={t("profile.notify")}
+                hint={t("profile.notifyHint")}
+                checked={candidate.notify_status}
+                onToggle={(next) => toggleSetting("notify_status", next)}
+                divider
+              />
+              <SwitchRow
+                label={t("profile.jobAlerts")}
+                hint={t("profile.jobAlertsHint")}
+                checked={candidate.job_alerts}
+                onToggle={(next) => toggleSetting("job_alerts", next)}
+              />
             </div>
             {notifyError ? <p role="alert" className="mt-1.5 px-4 text-footnote text-danger">{notifyError}</p> : null}
           </section>
@@ -537,6 +524,47 @@ function Row({
           "-"
         )}
       </dd>
+    </div>
+  );
+}
+
+function SwitchRow({
+  label,
+  hint,
+  checked,
+  onToggle,
+  divider = false,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onToggle: (next: boolean) => void;
+  divider?: boolean;
+}) {
+  return (
+    <div
+      className={`flex min-h-[60px] items-center justify-between gap-4 ${divider ? "border-b border-line" : ""}`}
+    >
+      <div className="min-w-0">
+        <p className="text-body">{label}</p>
+        <p className="text-caption text-muted">{hint}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onToggle(!checked)}
+        className="flex h-11 w-14 flex-none items-center justify-end"
+      >
+        <span className={`relative h-7 w-12 rounded-full transition-colors ${checked ? "bg-accent" : "bg-line"}`}>
+          <span
+            className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${
+              checked ? "left-[22px]" : "left-0.5"
+            }`}
+          />
+        </span>
+      </button>
     </div>
   );
 }

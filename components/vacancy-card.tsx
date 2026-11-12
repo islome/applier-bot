@@ -78,6 +78,11 @@ export function VacancyCard({ vacancy: v, now }: { vacancy: VacancyRow; now: num
       <p className="mt-3 text-body font-semibold text-money">{formatSalary(v, t)}</p>
 
       <div className="mt-2.5 flex flex-wrap gap-2">
+        {v.for_you ? (
+          <span className="rounded-full bg-accent/12 px-2.5 py-1 text-caption font-medium text-accent-text">
+            {t("vacancies.forYou")}
+          </span>
+        ) : null}
         <Tag>{employmentLabel(v.employment_type, t)}</Tag>
         <Tag>{majorLabel(v.major)}</Tag>
       </div>
